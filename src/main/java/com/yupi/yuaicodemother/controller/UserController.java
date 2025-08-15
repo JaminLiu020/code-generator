@@ -3,6 +3,7 @@ package com.yupi.yuaicodemother.controller;
 import com.mybatisflex.core.paginate.Page;
 import com.yupi.yuaicodemother.common.BaseResponse;
 import com.yupi.yuaicodemother.common.ResultUtils;
+import com.yupi.yuaicodemother.exception.BusinessException;
 import com.yupi.yuaicodemother.exception.ErrorCode;
 import com.yupi.yuaicodemother.exception.ThrowUtils;
 import com.yupi.yuaicodemother.model.dto.user.UserRegisterRequest;
@@ -139,5 +140,18 @@ public class UserController {
         return ResultUtils.success(loginUserVO);
     }
 
+    /**
+     * 用户注销接口
+     * @param request
+     * @return
+     */
+    @PostMapping("logout")
+    public BaseResponse<Boolean> userLogout(HttpServletRequest request) {
+        if(request==null){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR);
+        }
+        boolean result = userService.logout(request);
+        return ResultUtils.success(result);
+    }
 
 }

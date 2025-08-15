@@ -151,4 +151,23 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>  implements U
         }
         return currentUser;
     }
+
+    /**
+     * 用户注销。
+     * @param request
+     * @return
+     */
+    @Override
+    public boolean logout(HttpServletRequest request) {
+        // 1. 判断是否登录
+        User currentUser = (User) request.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
+        if (currentUser == null){
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR, "用户未登录");
+        }
+
+        // 2. 注销
+        request.getSession().removeAttribute(UserConstant.USER_LOGIN_STATE);
+
+        return true;
+    }
 }
