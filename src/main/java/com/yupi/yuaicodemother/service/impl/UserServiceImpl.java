@@ -129,5 +129,26 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>  implements U
         return loginUserVO;
     }
 
+    /**
+     * 获取当前登录用户。
+     * @param request
+     * @return
+     */
+    @Override
+    public User getLoginUser(HttpServletRequest request) {
+        // 先判断用户是否登录
+        User currentUser = (User) request.getSession().getAttribute(UserConstant.USER_LOGIN_STATE);
+        if (currentUser == null || currentUser.getId() == null) {
+            // 如果用户未登录，抛出异常
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR, "用户未登录");
+        }
 
+        // 从数据库查询当前用户信息
+        currentUser = this.getById(currentUser.getId());
+        if (currentUser == null) {
+            // 如果用户信息不存在，抛出异常
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR, "用户信息不存在");
+        }
+        return currentUser;
+    }
 }
