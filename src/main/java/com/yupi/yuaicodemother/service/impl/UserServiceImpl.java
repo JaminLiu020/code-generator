@@ -1,0 +1,79 @@
+package com.yupi.yuaicodemother.service.impl;
+
+import cn.hutool.core.util.StrUtil;
+import com.mybatisflex.core.query.QueryWrapper;
+import com.mybatisflex.spring.service.impl.ServiceImpl;
+import com.yupi.yuaicodemother.exception.BusinessException;
+import com.yupi.yuaicodemother.exception.ErrorCode;
+import com.yupi.yuaicodemother.mapper.UserMapper;
+import com.yupi.yuaicodemother.model.entity.User;
+import com.yupi.yuaicodemother.model.enums.UserRoleEnum;
+import com.yupi.yuaicodemother.service.UserService;
+import org.springframework.stereotype.Service;
+import org.springframework.util.DigestUtils;
+
+/**
+ *  服务层实现。
+ *
+ * @author <a href="https://github.com/JaminLiu020">程序员小明</a>
+ */
+@Service
+public class UserServiceImpl extends ServiceImpl<UserMapper, User>  implements UserService {
+
+    /**
+     * 用户注册。
+     * @param userAccount
+     * @param userPassword
+     * @param checkPassword
+     * @return
+     */
+    @Override
+    public Long userRegister(String userAccount, String userPassword, String checkPassword) {
+        // 1. 参数校验
+        if (StrUtil.hasBlank(userAccount, userPassword, checkPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数不能为空");
+        }
+        if (userAccount.length() < 4) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号长度不能小于4");
+        }
+        if (userPassword.length() < 8) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码长度不能小于8");
+        }
+        if (!userPassword.equals(checkPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "两次密码不一致");
+        }
+
+        // 2. 账号不能重复
+        QueryWrapper queryWrapper = new QueryWrapper();
+        queryWrapper.eq("userAccount", userAccount);
+        long count = this.count(queryWrapper);
+        if (count > 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号已存在");
+        }
+
+        // 3. 密码加密
+        String encryptPassword = getEncryptPassword(userPassword);
+
+        // 4. 创建用户
+        User user = User.builder()
+                .userAccount(userAccount)
+                .userPassword(encryptPassword)
+                .userName("用户" + userAccount) // 默认用户名
+                .userRole(UserRoleEnum.USER.getValue()) // 默认普通用户
+                .build();
+        boolean saveResult = save(user);
+        if (!saveResult) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "用户注册失败，数据库错误");
+        }
+        return user.getId();
+    }
+
+    @Override
+    public String getEncryptPassword(String userPassword) {
+        final String SALT = "jamin";
+
+        return DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
+    }
+
+
+}
