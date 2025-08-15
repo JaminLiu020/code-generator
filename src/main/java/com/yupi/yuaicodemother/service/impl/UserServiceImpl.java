@@ -3,14 +3,20 @@ package com.yupi.yuaicodemother.service.impl;
 import cn.hutool.core.util.StrUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
+import com.yupi.yuaicodemother.constant.UserConstant;
 import com.yupi.yuaicodemother.exception.BusinessException;
 import com.yupi.yuaicodemother.exception.ErrorCode;
 import com.yupi.yuaicodemother.mapper.UserMapper;
 import com.yupi.yuaicodemother.model.entity.User;
 import com.yupi.yuaicodemother.model.enums.UserRoleEnum;
+import com.yupi.yuaicodemother.model.vo.LoginUserVO;
 import com.yupi.yuaicodemother.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
+
+import java.nio.charset.StandardCharsets;
 
 /**
  *  服务层实现。
@@ -60,7 +66,9 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>  implements U
                 .userPassword(encryptPassword)
                 .userName("用户" + userAccount) // 默认用户名
                 .userRole(UserRoleEnum.USER.getValue()) // 默认普通用户
+                .shareCode(userAccount)
                 .build();
+
         boolean saveResult = save(user);
         if (!saveResult) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "用户注册失败，数据库错误");
@@ -72,7 +80,53 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>  implements U
     public String getEncryptPassword(String userPassword) {
         final String SALT = "jamin";
 
-        return DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes());
+        return DigestUtils.md5DigestAsHex((SALT + userPassword).getBytes(StandardCharsets.UTF_8));
+    }
+
+    /**
+     * 获取登录用户信息。
+     * @param userAccount
+     * @param userPassword
+     * @return
+     */
+    @Override
+    public LoginUserVO userLogin(String userAccount, String userPassword, HttpServletRequest request) {
+        // 1. 校验
+        if (StrUtil.hasBlank(userAccount, userPassword)){
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数不能为空");
+        }
+        if (userAccount.length() < 4) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号长度不能小于4");
+        }
+        if (userPassword.length() < 8) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码长度不能小于8");
+        }
+
+        // 2. 查询用户
+        String encryptPassword = getEncryptPassword(userPassword);
+        QueryWrapper queryWrapper = new QueryWrapper();
+        queryWrapper.eq("userAccount", userAccount)
+                .eq("userPassword", encryptPassword);
+        User user = this.getOne(queryWrapper);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "账号不存在或密码错误");
+        }
+
+        // 3. 记录登录态
+        request.getSession().setAttribute(UserConstant.USER_LOGIN_STATE, user);
+
+        // 4. 返回脱敏后的用户信息
+        return this.getLoginUserVO(user);
+    }
+
+    @Override
+    public LoginUserVO getLoginUserVO(User user) {
+        if (user == null) {
+            return null;
+        }
+        LoginUserVO loginUserVO = new LoginUserVO();
+        BeanUtils.copyProperties(user, loginUserVO);
+        return loginUserVO;
     }
 
 

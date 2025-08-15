@@ -6,7 +6,9 @@ import com.yupi.yuaicodemother.common.ResultUtils;
 import com.yupi.yuaicodemother.exception.ErrorCode;
 import com.yupi.yuaicodemother.exception.ThrowUtils;
 import com.yupi.yuaicodemother.model.dto.user.UserRegisterRequest;
+import com.yupi.yuaicodemother.model.vo.LoginUserVO;
 import com.yupi.yuaicodemother.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -109,6 +111,21 @@ public class UserController {
         String checkPassword = userRegisterRequest.getCheckPassword();
         Long userId = userService.userRegister(userAccount, userPassword, checkPassword);
         return ResultUtils.success(userId);
+    }
+
+    /**
+     * 用户登录接口
+     * @param userRegisterRequest
+     * @param request
+     * @return
+     */
+    @PostMapping("login")
+    public BaseResponse<LoginUserVO> userLogin(@RequestBody UserRegisterRequest userRegisterRequest, HttpServletRequest request) {
+        ThrowUtils.throwIf(userRegisterRequest == null, ErrorCode.PARAMS_ERROR);
+        String userAccount = userRegisterRequest.getUserAccount();
+        String userPassword = userRegisterRequest.getUserPassword();
+        LoginUserVO loginUserVO = userService.userLogin(userAccount, userPassword, request);
+        return ResultUtils.success(loginUserVO);
     }
 
 }

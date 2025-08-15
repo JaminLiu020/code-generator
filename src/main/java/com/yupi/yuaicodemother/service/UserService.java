@@ -2,6 +2,8 @@ package com.yupi.yuaicodemother.service;
 
 import com.mybatisflex.core.service.IService;
 import com.yupi.yuaicodemother.model.entity.User;
+import com.yupi.yuaicodemother.model.vo.LoginUserVO;
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  *  服务层。
@@ -26,4 +28,20 @@ public interface UserService extends IService<User> {
      * @return 加密后的密码
      */
     String getEncryptPassword(String userPassword);
+
+    /**
+     * 用户登录。
+     * @param userAccount
+     * @param userPassword
+     * @param request
+     * @return
+     */
+    LoginUserVO userLogin(String userAccount, String userPassword, HttpServletRequest request);
+
+    /**
+     * 获取当前登录用户的脱敏信息。
+     * @param user
+     * @return
+     */
+    LoginUserVO getLoginUserVO(User user);
 }
