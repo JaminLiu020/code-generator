@@ -1,15 +1,19 @@
 package com.yupi.yuaicodemother.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.yupi.yuaicodemother.constant.UserConstant;
 import com.yupi.yuaicodemother.exception.BusinessException;
 import com.yupi.yuaicodemother.exception.ErrorCode;
+import com.yupi.yuaicodemother.exception.ThrowUtils;
 import com.yupi.yuaicodemother.mapper.UserMapper;
+import com.yupi.yuaicodemother.model.dto.user.UserQueryRequest;
 import com.yupi.yuaicodemother.model.entity.User;
 import com.yupi.yuaicodemother.model.enums.UserRoleEnum;
 import com.yupi.yuaicodemother.model.vo.LoginUserVO;
+import com.yupi.yuaicodemother.model.vo.UserVO;
 import com.yupi.yuaicodemother.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.BeanUtils;
@@ -17,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 /**
  *  服务层实现。
@@ -169,5 +174,51 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>  implements U
         request.getSession().removeAttribute(UserConstant.USER_LOGIN_STATE);
 
         return true;
+    }
+
+    /**
+     * 获取脱敏后的用户信息。
+     * @param user
+     * @return
+     */
+    @Override
+    public UserVO getUserVO(User user) {
+        if (user == null) {
+            return null;
+        }
+        UserVO userVO = new UserVO();
+        BeanUtils.copyProperties(user, userVO);
+        return userVO;
+    }
+
+    /**
+     * 获取脱敏后的用户信息列表。
+     * @param userList
+     * @return
+     */
+    @Override
+    public List<UserVO> getUserVOList(List<User> userList) {
+        ThrowUtils.throwIf(CollUtil.isEmpty(userList), ErrorCode.PARAMS_ERROR, "用户列表不能为空");
+        return userList.stream()
+                .map(this::getUserVO)
+                .toList();
+    }
+
+    /**
+     * 获取查询条件包装器。
+     * @param userQueryRequest
+     * @return
+     */
+    @Override
+    public QueryWrapper getQueryWrapper(UserQueryRequest userQueryRequest) {
+        ThrowUtils.throwIf(userQueryRequest == null, ErrorCode.PARAMS_ERROR, "查询请求不能为空");
+        QueryWrapper queryWrapper = new QueryWrapper();
+        return QueryWrapper.create()
+                .eq("id", userQueryRequest.getId())
+                .eq("userRole", userQueryRequest.getUserRole())
+                .like("userAccount", userQueryRequest.getUserAccount())
+                .like("userName", userQueryRequest.getUserName())
+                .like("userProfile", userQueryRequest.getUserProfile())
+                .orderBy(userQueryRequest.getSortField(), "ascend".equals(userQueryRequest.getSortOrder()));
     }
 }

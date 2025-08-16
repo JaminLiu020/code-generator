@@ -1,9 +1,14 @@
 package com.yupi.yuaicodemother.service;
 
+import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
+import com.yupi.yuaicodemother.model.dto.user.UserQueryRequest;
 import com.yupi.yuaicodemother.model.entity.User;
 import com.yupi.yuaicodemother.model.vo.LoginUserVO;
+import com.yupi.yuaicodemother.model.vo.UserVO;
 import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.List;
 
 /**
  *  服务层。
@@ -58,4 +63,26 @@ public interface UserService extends IService<User> {
      * @return
      */
     boolean logout(HttpServletRequest request);
+
+    /**
+     * 获取脱敏后的用户信息。
+     * @param user
+     * @return
+     */
+    UserVO getUserVO(User user);
+
+    /**
+     * 获取脱敏后的用户信息列表。
+     * @param userList
+     * @return
+     */
+    List<UserVO> getUserVOList(List<User> userList);
+
+    /**
+     * 获取查询条件包装器。
+     * @param userQueryRequest
+     * @return
+     */
+    QueryWrapper getQueryWrapper(UserQueryRequest userQueryRequest);
+
 }
