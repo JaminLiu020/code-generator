@@ -1,8 +1,10 @@
 package com.yupi.yuaicodemother.controller;
 
 import com.mybatisflex.core.paginate.Page;
+import com.yupi.yuaicodemother.annotation.AuthCheck;
 import com.yupi.yuaicodemother.common.BaseResponse;
 import com.yupi.yuaicodemother.common.ResultUtils;
+import com.yupi.yuaicodemother.constant.UserConstant;
 import com.yupi.yuaicodemother.exception.BusinessException;
 import com.yupi.yuaicodemother.exception.ErrorCode;
 import com.yupi.yuaicodemother.exception.ThrowUtils;
@@ -41,6 +43,7 @@ public class UserController {
      * @return {@code true} 保存成功，{@code false} 保存失败
      */
     @PostMapping("save")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public boolean save(@RequestBody User user) {
         return userService.save(user);
     }
@@ -52,6 +55,7 @@ public class UserController {
      * @return {@code true} 删除成功，{@code false} 删除失败
      */
     @DeleteMapping("remove/{id}")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public boolean remove(@PathVariable Long id) {
         return userService.removeById(id);
     }
@@ -63,6 +67,7 @@ public class UserController {
      * @return {@code true} 更新成功，{@code false} 更新失败
      */
     @PutMapping("update")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public boolean update(@RequestBody User user) {
         return userService.updateById(user);
     }
@@ -73,6 +78,7 @@ public class UserController {
      * @return 所有数据
      */
     @GetMapping("list")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public List<User> list() {
         return userService.list();
     }
@@ -84,6 +90,7 @@ public class UserController {
      * @return 详情
      */
     @GetMapping("getInfo/{id}")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public User getInfo(@PathVariable Long id) {
         return userService.getById(id);
     }
@@ -95,6 +102,7 @@ public class UserController {
      * @return 分页对象
      */
     @GetMapping("page")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
     public Page<User> page(Page<User> page) {
         return userService.page(page);
     }
