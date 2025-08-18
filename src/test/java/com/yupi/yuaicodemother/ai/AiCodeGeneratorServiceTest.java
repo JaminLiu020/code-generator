@@ -1,5 +1,7 @@
 package com.yupi.yuaicodemother.ai;
 
+import com.yupi.yuaicodemother.ai.model.HtmlCodeResult;
+import com.yupi.yuaicodemother.ai.model.MultiFileCodeResult;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -13,13 +15,25 @@ class AiCodeGeneratorServiceTest {
 
     @Test
     void generateHtmlCode() {
-        String result = aiCodeGeneratorService.generateHtmlCode("生成一个简单的 HTML 页面，包含标题和段落。");
+        HtmlCodeResult result = aiCodeGeneratorService.generateHtmlCode("生成一个最简网页Demo，要求有内容、互动按钮等");
         System.out.println(result);
     }
 
     @Test
     void generateMultiFileCode() {
-        String result = aiCodeGeneratorService.generateMultiFileCode("生成一个毕业留言板");
+        MultiFileCodeResult result = aiCodeGeneratorService.generateMultiFileCode("生成一个最简网页Demo，要求有内容、互动按钮等");
         System.out.println(result);
+    }
+
+    @Test
+    void testChat() {
+        String result = aiCodeGeneratorService.testChat("请输出最大长度的文本，用字母A填充");
+        System.out.println(result);
+    }
+
+    @Test
+    void generateHtmlCodeStream() {
+        aiCodeGeneratorService.generateHtmlCodeStream("生成一个最简网页Demo，要求有内容、互动按钮等")
+                .subscribe(System.out::print);
     }
 }

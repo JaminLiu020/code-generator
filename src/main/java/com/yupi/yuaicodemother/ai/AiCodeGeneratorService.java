@@ -1,6 +1,9 @@
 package com.yupi.yuaicodemother.ai;
 
+import com.yupi.yuaicodemother.ai.model.HtmlCodeResult;
+import com.yupi.yuaicodemother.ai.model.MultiFileCodeResult;
 import dev.langchain4j.service.SystemMessage;
+import reactor.core.publisher.Flux;
 
 public interface AiCodeGeneratorService {
 
@@ -11,7 +14,7 @@ public interface AiCodeGeneratorService {
      * @return AI 的输出结果
      */
     @SystemMessage(fromResource = "prompt/codegen-html-system-prompt.txt")
-    String generateHtmlCode(String userMessage);
+    HtmlCodeResult generateHtmlCode(String userMessage);
 
     /**
      * 生成多文件代码
@@ -20,5 +23,23 @@ public interface AiCodeGeneratorService {
      * @return AI 的输出结果
      */
     @SystemMessage(fromResource = "prompt/codegen-multi-file-system-prompt.txt")
-    String generateMultiFileCode(String userMessage);
+    MultiFileCodeResult generateMultiFileCode(String userMessage);
+
+    String testChat(String userMessage);
+
+    /**
+     * 生成 HTML 代码（流式）
+     * @param userMessage
+     * @return
+     */
+    @SystemMessage(fromResource = "prompt/codegen-html-system-prompt.txt")
+    Flux<String> generateHtmlCodeStream(String userMessage);
+
+    /**
+     * 生成多文件代码（流式）
+     * @param userMessage
+     * @return
+     */
+    @SystemMessage(fromResource = "prompt/codegen-multi-file-system-prompt.txt")
+    Flux<String> generateMultiFileCodeStream(String userMessage);
 }
