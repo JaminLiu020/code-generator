@@ -57,11 +57,6 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <optional>true</optional>
-        </dependency>
-        <dependency>
             <groupId>cn.hutool</groupId>
             <artifactId>hutool-all</artifactId>
             <version>5.8.38</version>
@@ -91,9 +86,17 @@
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
         </dependency>
-
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j</artifactId>
+            <version>1.1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.langchain4j</groupId>
+            <artifactId>langchain4j-open-ai-spring-boot-starter</artifactId>
+            <version>1.1.0-beta7</version>
+        </dependency>
     </dependencies>
-
     <build>
         <plugins>
             <plugin>
