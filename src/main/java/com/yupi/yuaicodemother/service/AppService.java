@@ -2,6 +2,7 @@ package com.yupi.yuaicodemother.service;
 
 import com.mybatisflex.core.service.IService;
 import com.yupi.yuaicodemother.model.entity.App;
+import com.yupi.yuaicodemother.model.vo.AppVO;
 
 /**
  *  服务层。
@@ -10,4 +11,10 @@ import com.yupi.yuaicodemother.model.entity.App;
  */
 public interface AppService extends IService<App> {
 
+    /**
+     * 获取应用的视图对象。
+     * @param app
+     * @return
+     */
+    AppVO getAppVO(App app);
 }
