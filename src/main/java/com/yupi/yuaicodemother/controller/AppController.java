@@ -270,4 +270,21 @@ public class AppController {
         return ResultUtils.success(appVOPage);
     }
 
+    /**
+     * 管理员根据 id 获取应用详情
+     *
+     * @param id 应用 id
+     * @return 应用详情
+     */
+    @GetMapping("/admin/get/vo")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<AppVO> getAppVOByIdByAdmin(long id) {
+        ThrowUtils.throwIf(id <= 0, ErrorCode.PARAMS_ERROR);
+        // 查询数据库
+        App app = appService.getById(id);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR);
+        // 获取封装类
+        return ResultUtils.success(appService.getAppVO(app));
+    }
+
 }
