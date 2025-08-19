@@ -3,7 +3,9 @@ package com.yupi.yuaicodemother.core;
 import com.yupi.yuaicodemother.ai.AiCodeGeneratorService;
 import com.yupi.yuaicodemother.ai.model.HtmlCodeResult;
 import com.yupi.yuaicodemother.ai.model.MultiFileCodeResult;
-import com.yupi.yuaicodemother.ai.model.enums.CodeGenTypeEnum;
+import com.yupi.yuaicodemother.core.parse.CodeParserExecutor;
+import com.yupi.yuaicodemother.core.saver.CodeFileSaverExecutor;
+import com.yupi.yuaicodemother.model.enums.CodeGenTypeEnum;
 import com.yupi.yuaicodemother.exception.BusinessException;
 import com.yupi.yuaicodemother.exception.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
@@ -36,11 +38,14 @@ public class AiCodeGeneratorFacade {
         // 根据不同的代码生成类型调用不同的方法
         switch (codeGenTypeEnum) {
             case HTML:
-                return generateAndSaveHtmlCode(userMessage);
+                HtmlCodeResult htmlCodeResult = aiCodeGeneratorService.generateHtmlCode(userMessage);
+                return CodeFileSaverExecutor.executeSaver(htmlCodeResult, CodeGenTypeEnum.HTML);
             case MULTI_FILE:
-                return generateAndSaveMultiFileCode(userMessage);
+                MultiFileCodeResult multiFileCodeResult = aiCodeGeneratorService.generateMultiFileCode(userMessage);
+                return CodeFileSaverExecutor.executeSaver(multiFileCodeResult, CodeGenTypeEnum.MULTI_FILE);
             default:
-                throw new UnsupportedOperationException("Unsupported code generation type: " + codeGenTypeEnum);
+                String errorMsg = "Unsupported code generation type: " + codeGenTypeEnum.getValue();
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, errorMsg);
         }
     }
 
@@ -49,6 +54,7 @@ public class AiCodeGeneratorFacade {
      * @param userMessage
      * @return
      */
+    @Deprecated
     private File generateAndSaveHtmlCode(String userMessage) {
         HtmlCodeResult htmlCodeResult = aiCodeGeneratorService.generateHtmlCode(userMessage);
         return CodeFileSaver.saveHtmlCodeResult(htmlCodeResult);
@@ -59,6 +65,7 @@ public class AiCodeGeneratorFacade {
      * @param userMessage
      * @return
      */
+    @Deprecated
     private File generateAndSaveMultiFileCode(String userMessage) {
         MultiFileCodeResult multiFileCodeResult = aiCodeGeneratorService.generateMultiFileCode(userMessage);
         return CodeFileSaver.saveMultiFileCodeResult(multiFileCodeResult);
@@ -77,14 +84,37 @@ public class AiCodeGeneratorFacade {
         // 根据不同的代码生成类型调用不同的方法
         switch (codeGenTypeEnum) {
             case HTML:
-                return generateAndSaveHtmlCodeStream(userMessage);
+                Flux<String> codeStream = aiCodeGeneratorService.generateHtmlCodeStream(userMessage);
+                return proccessCodeStream(codeStream, CodeGenTypeEnum.HTML);
             case MULTI_FILE:
-                return generateAndSaveMultiFileCodeStream(userMessage);
-
+                codeStream = aiCodeGeneratorService.generateMultiFileCodeStream(userMessage);
+                return proccessCodeStream(codeStream, CodeGenTypeEnum.MULTI_FILE);
             default:
                 String errorMsg = "Unsupported code generation type: " + codeGenTypeEnum;
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, errorMsg);
         }
+    }
+
+    private Flux<String> proccessCodeStream(Flux<String> codeStream, CodeGenTypeEnum codeGenTypeEnum) {
+        // 由于是流式处理，使用StringBuilder累积结果
+        StringBuilder stringBuilder = new StringBuilder();
+        return codeStream
+                // 累积流式结果
+                .doOnNext(chunk -> {
+                    stringBuilder.append(chunk);
+                })
+                // 流式处理完成后，进行解析和保存
+                .doOnComplete(() -> {
+                    try {
+                        String codeContent = stringBuilder.toString();
+                        Object codeResult = CodeParserExecutor.executeParser(codeContent, codeGenTypeEnum);
+                        File saveDir = CodeFileSaverExecutor.executeSaver(codeResult, codeGenTypeEnum);
+                        log.info("保存成功，路径为：{}", saveDir.getAbsolutePath());
+                    }
+                    catch (Exception e) {
+                        log.error("保存文件失败:{}", e.getMessage());
+                    }
+                });
     }
 
     /**
@@ -92,6 +122,7 @@ public class AiCodeGeneratorFacade {
      * @param userMessage
      * @return
      */
+    @Deprecated
     private Flux<String> generateAndSaveHtmlCodeStream(String userMessage) {
         Flux<String> result = aiCodeGeneratorService.generateHtmlCodeStream(userMessage);
         // 由于是流式处理，使用StringBuilder累积结果
@@ -121,6 +152,7 @@ public class AiCodeGeneratorFacade {
      * @param userMessage
      * @return
      */
+    @Deprecated
     private Flux<String> generateAndSaveMultiFileCodeStream(String userMessage){
         Flux<String> result = aiCodeGeneratorService.generateMultiFileCodeStream(userMessage);
 

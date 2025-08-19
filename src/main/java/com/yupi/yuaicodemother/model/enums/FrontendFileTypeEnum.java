@@ -1,4 +1,4 @@
-package com.yupi.yuaicodemother.ai.model.enums;
+package com.yupi.yuaicodemother.model.enums;
 
 import lombok.Getter;
 

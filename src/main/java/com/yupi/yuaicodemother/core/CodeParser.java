@@ -6,6 +6,7 @@ import com.yupi.yuaicodemother.ai.model.MultiFileCodeResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+@Deprecated
 public class CodeParser {
     public static final Pattern HTML_CODE_PATTERN = Pattern.compile("```html\\s*\n([\\s\\S]*?)```", Pattern.CASE_INSENSITIVE);
     public static final Pattern CSS_CODE_PATTERN = Pattern.compile("```css\\s*\n([\\s\\S]*?)```", Pattern.CASE_INSENSITIVE);

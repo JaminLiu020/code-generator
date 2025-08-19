@@ -5,12 +5,13 @@ import cn.hutool.core.util.IdUtil;
 import cn.hutool.core.util.StrUtil;
 import com.yupi.yuaicodemother.ai.model.HtmlCodeResult;
 import com.yupi.yuaicodemother.ai.model.MultiFileCodeResult;
-import com.yupi.yuaicodemother.ai.model.enums.CodeGenTypeEnum;
-import com.yupi.yuaicodemother.ai.model.enums.FrontendFileTypeEnum;
+import com.yupi.yuaicodemother.model.enums.CodeGenTypeEnum;
+import com.yupi.yuaicodemother.model.enums.FrontendFileTypeEnum;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 
+@Deprecated
 public class CodeFileSaver {
     public static final String FILE_SAVE_ROOT_DIR = System.getProperty("user.dir") + "/tmp/code_output/";
 
@@ -20,8 +21,11 @@ public class CodeFileSaver {
      * @return
      */
     public static File saveHtmlCodeResult(HtmlCodeResult htmlCodeResult){
+        // 1. 构建唯一目录
         final String baseDirPath = buildUniqueDir(CodeGenTypeEnum.HTML.getValue());
+        // 2. 保存文件
         WriteToFile(htmlCodeResult.getHtmlCode(), baseDirPath, FrontendFileTypeEnum.HTML.getFileName());
+        // 3. 返回文件目录对象
         return new File(baseDirPath);
     }
 
@@ -31,10 +35,13 @@ public class CodeFileSaver {
      * @return
      */
     public static File saveMultiFileCodeResult(MultiFileCodeResult multiFileCodeResult) {
+        // 1. 构建唯一目录
         final String baseDirPath = buildUniqueDir(CodeGenTypeEnum.MULTI_FILE.getValue());
+        // 2. 保存文件
         WriteToFile(multiFileCodeResult.getHtmlCode(), baseDirPath, FrontendFileTypeEnum.HTML.getFileName());
         WriteToFile(multiFileCodeResult.getCssCode(), baseDirPath, FrontendFileTypeEnum.CSS.getFileName());
         WriteToFile(multiFileCodeResult.getJsCode(), baseDirPath, FrontendFileTypeEnum.JS.getFileName());
+        // 3. 返回文件目录对象
         return new File(baseDirPath);
     }
 

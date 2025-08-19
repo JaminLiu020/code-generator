@@ -1,6 +1,6 @@
 package com.yupi.yuaicodemother.core;
 
-import com.yupi.yuaicodemother.ai.model.enums.CodeGenTypeEnum;
+import com.yupi.yuaicodemother.model.enums.CodeGenTypeEnum;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,8 +9,6 @@ import reactor.core.publisher.Flux;
 
 import java.io.File;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 class AiCodeGeneratorFacadeTest {
@@ -21,7 +19,7 @@ class AiCodeGeneratorFacadeTest {
     @Test
     void generateAndSaveCode() {
         File file = aiCodeGeneratorFacade.generateAndSaveCode(
-                "生成一个最简网页Demo，要求有内容、互动按钮等",
+                "生成一个最简网页Demo，要求有内容、互动按钮等，不超过30行代码",
                 CodeGenTypeEnum.MULTI_FILE
         );
         Assertions.assertNotNull(file, "生成的文件不应为 null");
@@ -30,7 +28,7 @@ class AiCodeGeneratorFacadeTest {
     @Test
     void generateAndSaveCodeStream() {
         Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream(
-                "生成一个最简的记事本网站，要求有内容、增删改查等",
+                "生成一个最简的记事本网站，要求有内容、增删改查等，不超过30行代码",
                 CodeGenTypeEnum.MULTI_FILE
         );
         List<String> result = codeStream.collectList().block();
