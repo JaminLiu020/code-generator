@@ -89,7 +89,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>  implements U
     }
 
     /**
-     * 获取登录用户信息。
+     * 用户登陆。
      * @param userAccount
      * @param userPassword
      * @return

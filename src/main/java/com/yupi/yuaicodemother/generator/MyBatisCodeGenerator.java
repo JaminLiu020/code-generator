@@ -11,7 +11,7 @@ import java.util.Map;
 public class MyBatisCodeGenerator {
 
     // 需要生成的表名
-    private static final String[] TABLE_NAMES = {"user"};
+    private static final String[] TABLE_NAMES = {"app"};
 
     public static void main(String[] args) {
         // 获取数据源信息
@@ -47,7 +47,7 @@ public class MyBatisCodeGenerator {
 
         // 设置表前缀和只生成哪些表，setGenerateTable 未配置时，生成所有表
         globalConfig.getStrategyConfig()
-//                .setGenerateTable(TABLE_NAMES)
+                .setGenerateTable(TABLE_NAMES)
                 // 设置逻辑删除的默认字段名称
                 .setLogicDeleteColumn("isDelete");
 
