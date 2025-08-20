@@ -31,7 +31,7 @@ public class AiCodeGeneratorFacade {
      * @param codeGenTypeEnum
      * @return
      */
-    public File generateAndSaveCode(String userMessage, CodeGenTypeEnum codeGenTypeEnum){
+    public File generateAndSaveCode(String userMessage, CodeGenTypeEnum codeGenTypeEnum, Long appId){
         if (codeGenTypeEnum == null) {
             throw new IllegalArgumentException("Code generation type cannot be null");
         }
@@ -39,10 +39,10 @@ public class AiCodeGeneratorFacade {
         switch (codeGenTypeEnum) {
             case HTML:
                 HtmlCodeResult htmlCodeResult = aiCodeGeneratorService.generateHtmlCode(userMessage);
-                return CodeFileSaverExecutor.executeSaver(htmlCodeResult, CodeGenTypeEnum.HTML);
+                return CodeFileSaverExecutor.executeSaver(htmlCodeResult, CodeGenTypeEnum.HTML, appId);
             case MULTI_FILE:
                 MultiFileCodeResult multiFileCodeResult = aiCodeGeneratorService.generateMultiFileCode(userMessage);
-                return CodeFileSaverExecutor.executeSaver(multiFileCodeResult, CodeGenTypeEnum.MULTI_FILE);
+                return CodeFileSaverExecutor.executeSaver(multiFileCodeResult, CodeGenTypeEnum.MULTI_FILE, appId);
             default:
                 String errorMsg = "Unsupported code generation type: " + codeGenTypeEnum.getValue();
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, errorMsg);
@@ -75,9 +75,10 @@ public class AiCodeGeneratorFacade {
      * 生成并保存代码流
      * @param userMessage
      * @param codeGenTypeEnum
+     * @param appId
      * @return
      */
-    public Flux<String> generateAndSaveCodeStream(String userMessage, CodeGenTypeEnum codeGenTypeEnum) {
+    public Flux<String> generateAndSaveCodeStream(String userMessage, CodeGenTypeEnum codeGenTypeEnum, Long appId) {
         if (codeGenTypeEnum == null) {
             throw new IllegalArgumentException("Code generation type cannot be null");
         }
@@ -85,17 +86,24 @@ public class AiCodeGeneratorFacade {
         switch (codeGenTypeEnum) {
             case HTML:
                 Flux<String> codeStream = aiCodeGeneratorService.generateHtmlCodeStream(userMessage);
-                return proccessCodeStream(codeStream, CodeGenTypeEnum.HTML);
+                return proccessCodeStream(codeStream, CodeGenTypeEnum.HTML, appId);
             case MULTI_FILE:
                 codeStream = aiCodeGeneratorService.generateMultiFileCodeStream(userMessage);
-                return proccessCodeStream(codeStream, CodeGenTypeEnum.MULTI_FILE);
+                return proccessCodeStream(codeStream, CodeGenTypeEnum.MULTI_FILE, appId);
             default:
                 String errorMsg = "Unsupported code generation type: " + codeGenTypeEnum;
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, errorMsg);
         }
     }
 
-    private Flux<String> proccessCodeStream(Flux<String> codeStream, CodeGenTypeEnum codeGenTypeEnum) {
+    /**
+     * 处理代码流并保存
+     * @param codeStream
+     * @param codeGenTypeEnum
+     * @param appId
+     * @return
+     */
+    private Flux<String> proccessCodeStream(Flux<String> codeStream, CodeGenTypeEnum codeGenTypeEnum, Long appId) {
         // 由于是流式处理，使用StringBuilder累积结果
         StringBuilder stringBuilder = new StringBuilder();
         return codeStream
@@ -108,7 +116,7 @@ public class AiCodeGeneratorFacade {
                     try {
                         String codeContent = stringBuilder.toString();
                         Object codeResult = CodeParserExecutor.executeParser(codeContent, codeGenTypeEnum);
-                        File saveDir = CodeFileSaverExecutor.executeSaver(codeResult, codeGenTypeEnum);
+                        File saveDir = CodeFileSaverExecutor.executeSaver(codeResult, codeGenTypeEnum, appId);
                         log.info("保存成功，路径为：{}", saveDir.getAbsolutePath());
                     }
                     catch (Exception e) {

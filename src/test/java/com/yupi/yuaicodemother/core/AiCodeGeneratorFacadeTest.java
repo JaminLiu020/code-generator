@@ -20,7 +20,8 @@ class AiCodeGeneratorFacadeTest {
     void generateAndSaveCode() {
         File file = aiCodeGeneratorFacade.generateAndSaveCode(
                 "生成一个最简网页Demo，要求有内容、互动按钮等，不超过30行代码",
-                CodeGenTypeEnum.MULTI_FILE
+                CodeGenTypeEnum.MULTI_FILE,
+                1L // 假设 appId 为 1
         );
         Assertions.assertNotNull(file, "生成的文件不应为 null");
     }
@@ -29,7 +30,8 @@ class AiCodeGeneratorFacadeTest {
     void generateAndSaveCodeStream() {
         Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream(
                 "生成一个最简的记事本网站，要求有内容、增删改查等，不超过30行代码",
-                CodeGenTypeEnum.MULTI_FILE
+                CodeGenTypeEnum.MULTI_FILE,
+                1L // 假设 appId 为 1
         );
         List<String> result = codeStream.collectList().block();
         Assertions.assertNotNull(result, "结果列表不应为 null");
