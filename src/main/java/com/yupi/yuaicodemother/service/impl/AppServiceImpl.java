@@ -17,10 +17,12 @@ import com.yupi.yuaicodemother.model.dto.app.AppQueryRequest;
 import com.yupi.yuaicodemother.model.entity.App;
 import com.yupi.yuaicodemother.mapper.AppMapper;
 import com.yupi.yuaicodemother.model.entity.User;
+import com.yupi.yuaicodemother.model.enums.ChatHistoryMessageTypeEnum;
 import com.yupi.yuaicodemother.model.enums.CodeGenTypeEnum;
 import com.yupi.yuaicodemother.model.vo.AppVO;
 import com.yupi.yuaicodemother.model.vo.UserVO;
 import com.yupi.yuaicodemother.service.AppService;
+import com.yupi.yuaicodemother.service.ChatHistoryService;
 import com.yupi.yuaicodemother.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.codec.ServerSentEvent;
@@ -45,6 +47,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
     private UserService userService;
     @Autowired
     private AiCodeGeneratorFacade aiCodeGeneratorFacade;
+    @Autowired
+    private ChatHistoryService chatHistoryService;
 
     /**
      * 获取应用的视图对象。
@@ -133,7 +137,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
      * @return
      */
     @Override
-    public Flux<ServerSentEvent<String>> chatToGenCode(Long appId, String message, User loginUser) {
+    public Flux<String> chatToGenCode(Long appId, String message, User loginUser) {
         // 参数校验
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID无效");
         ThrowUtils.throwIf(StrUtil.isBlank(message), ErrorCode.PARAMS_ERROR, "消息不能为空");
@@ -145,24 +149,30 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
                 ErrorCode.FORBIDDEN_ERROR, "没有权限操作该应用");
         CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(app.getCodeGenType());
         ThrowUtils.throwIf(codeGenTypeEnum == null, ErrorCode.PARAMS_ERROR, "不支持的代码生成类型");
+        // 在调用AI前，将用户消息存进对话记录表
+        chatHistoryService.addChatMessage(appId, message, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
         // 生成代码流
         Flux<String> contentFlux = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
         // 返回生成的代码流
         ThrowUtils.throwIf(contentFlux == null, ErrorCode.SYSTEM_ERROR, "代码生成失败");
+        StringBuilder aiResponseBuilder = new StringBuilder();
         return contentFlux
                 .map(chunk -> {
-                    Map<String, String> wrapper = Map.of("d", chunk);
-                    String jsonStr = JSONUtil.toJsonStr(wrapper);
-                    return ServerSentEvent.<String>builder()
-                            .data(jsonStr)
-                            .build();
+                    aiResponseBuilder.append(chunk);
+                    return chunk;
                 })
-                .concatWith(Mono.just(
-                        ServerSentEvent.<String>builder()
-                                .event("done")
-                                .data("")
-                                .build()
-                ));
+                //完成后存储AI消息到对话记录表
+                .doOnComplete(() ->{
+                    String aiResponse = aiResponseBuilder.toString();
+                    if (StrUtil.isNotBlank(aiResponse)) {
+                        chatHistoryService.addChatMessage(appId, aiResponse, ChatHistoryMessageTypeEnum.AI.getValue(), loginUser.getId());
+                    }
+                })
+                .doOnError(error -> {
+                    // 错误记录也要存到对话记录表
+                    String errorMesge = "AI回复出错：" + error.getMessage();
+                    chatHistoryService.addChatMessage(appId, errorMesge, ChatHistoryMessageTypeEnum.AI.getValue(), loginUser.getId());
+                });
     }
 
     /**
