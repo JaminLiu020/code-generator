@@ -1,7 +1,13 @@
 package com.yupi.yuaicodemother.service;
 
+import com.mybatisflex.core.paginate.Page;
+import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
+import com.yupi.yuaicodemother.model.dto.ChatHistoryQueryRequest;
 import com.yupi.yuaicodemother.model.entity.ChatHistory;
+import com.yupi.yuaicodemother.model.entity.User;
+
+import java.time.LocalDateTime;
 
 /**
  *  服务层。
@@ -26,4 +32,21 @@ public interface ChatHistoryService extends IService<ChatHistory> {
      * @return
      */
     boolean deleteByAppId(Long appId);
+
+    /**
+     * 查询应用的聊天记录列表
+     * @param appId
+     * @param pageSize
+     * @param lastCreateTime
+     * @param loginUser
+     * @return
+     */
+    Page<ChatHistory> listChatHistoryByPage(Long appId, int pageSize, LocalDateTime lastCreateTime, User loginUser);
+
+    /**
+     * 获取查询包装类
+     * @param queryRequest
+     * @return
+     */
+    QueryWrapper getQueryWrapper(ChatHistoryQueryRequest queryRequest);
 }

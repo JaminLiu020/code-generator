@@ -1,15 +1,24 @@
 package com.yupi.yuaicodemother.service.impl;
 
 import cn.hutool.core.util.StrUtil;
+import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
+import com.yupi.yuaicodemother.constant.UserConstant;
 import com.yupi.yuaicodemother.exception.ErrorCode;
 import com.yupi.yuaicodemother.exception.ThrowUtils;
+import com.yupi.yuaicodemother.model.dto.ChatHistoryQueryRequest;
+import com.yupi.yuaicodemother.model.entity.App;
 import com.yupi.yuaicodemother.model.entity.ChatHistory;
 import com.yupi.yuaicodemother.mapper.ChatHistoryMapper;
+import com.yupi.yuaicodemother.model.entity.User;
 import com.yupi.yuaicodemother.model.enums.ChatHistoryMessageTypeEnum;
+import com.yupi.yuaicodemother.service.AppService;
 import com.yupi.yuaicodemother.service.ChatHistoryService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
 
 /**
  *  服务层实现。
@@ -19,6 +28,8 @@ import org.springframework.stereotype.Service;
 @Service
 public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatHistory>  implements ChatHistoryService{
 
+    @Autowired
+    private AppService appService;
     /**
      * 添加聊天记录
      *
@@ -57,6 +68,63 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
         QueryWrapper queryWrapper = QueryWrapper.create()
                 .eq("appId", appId);
         return this.remove(queryWrapper);
+    }
+
+    @Override
+    public Page<ChatHistory> listChatHistoryByPage(Long appId, int pageSize, LocalDateTime lastCreateTime, User loginUser) {
+        // 参数校验
+        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID不能为空");
+        ThrowUtils.throwIf(pageSize <= 0 || pageSize >50, ErrorCode.PARAMS_ERROR, "分页大小必须在1-50之间");
+        ThrowUtils.throwIf(loginUser == null, ErrorCode.NOT_LOGIN_ERROR, "用户未登录");
+
+        // 验证权限，只有用户和管理员可以查看
+        App app = appService.getById(appId);
+        Boolean isAdmin = UserConstant.ADMIN_ROLE.equals(loginUser.getUserRole());
+        boolean isCreator = loginUser.getId().equals(app.getUserId());
+        ThrowUtils.throwIf(!isAdmin && !isCreator, ErrorCode.NO_AUTH_ERROR, "无权限查看该应用的聊天记录");
+
+        // 构建查询条件
+        ChatHistoryQueryRequest queryRequest = new ChatHistoryQueryRequest();
+        queryRequest.setAppId(appId);
+        queryRequest.setLastCreateTime(lastCreateTime);
+        QueryWrapper queryWrapper = this.getQueryWrapper(queryRequest);
+        // 查询数据
+        return this.page(Page.of(1, pageSize), queryWrapper);
+    }
+
+    /**
+     * 构造查询条件
+     * @param queryRequest
+     * @return
+     */
+    @Override
+    public QueryWrapper getQueryWrapper(ChatHistoryQueryRequest queryRequest) {
+        QueryWrapper queryWrapper = QueryWrapper.create();
+        if (queryRequest == null)
+            return queryWrapper;
+        Long id = queryRequest.getId();
+        String message = queryRequest.getMessage();
+        String messageType = queryRequest.getMessageType();
+        Long appId = queryRequest.getAppId();
+        Long userId = queryRequest.getUserId();
+        LocalDateTime lastCreateTime = queryRequest.getLastCreateTime();
+        String sortField = queryRequest.getSortField();
+        String sortOrder = queryRequest.getSortOrder();
+        // 拼接查询条件
+        queryWrapper.eq("id", id, id != null && id > 0)
+                .like("message", message)
+                .eq("messageType", messageType, messageType != null)
+                .eq("appId", appId)
+                .eq("userId", userId)
+                .lt("createTime", lastCreateTime, lastCreateTime != null);
+        // 设置排序
+        if (StrUtil.isNotBlank(sortField)) {
+            queryWrapper.orderBy(sortField, "ascend".equalsIgnoreCase(sortOrder));
+        }
+        else{
+            queryWrapper.orderBy("createTime", false); // 默认按创建时间降序
+        }
+        return queryWrapper;
     }
 
 }
