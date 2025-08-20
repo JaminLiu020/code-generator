@@ -13,10 +13,7 @@ import com.yupi.yuaicodemother.constant.UserConstant;
 import com.yupi.yuaicodemother.exception.BusinessException;
 import com.yupi.yuaicodemother.exception.ErrorCode;
 import com.yupi.yuaicodemother.exception.ThrowUtils;
-import com.yupi.yuaicodemother.model.dto.app.AppAddRequest;
-import com.yupi.yuaicodemother.model.dto.app.AppAdminUpdateRequest;
-import com.yupi.yuaicodemother.model.dto.app.AppQueryRequest;
-import com.yupi.yuaicodemother.model.dto.app.AppUpdateRequest;
+import com.yupi.yuaicodemother.model.dto.app.*;
 import com.yupi.yuaicodemother.model.entity.User;
 import com.yupi.yuaicodemother.model.enums.CodeGenTypeEnum;
 import com.yupi.yuaicodemother.model.vo.AppVO;
@@ -299,6 +296,27 @@ public class AppController {
         User loginUser = userService.getLoginUser(request);
         // 调用服务生成代码流
         return appService.chatToGenCode(appId, message, loginUser);
+    }
+
+    /**
+     * 部署应用
+     * @param appDeployRequest
+     * @param httpServletRequest
+     * @return
+     */
+    @PostMapping("/deploy")
+    public BaseResponse<String> deployApp(@RequestBody AppDeployRequest appDeployRequest, HttpServletRequest httpServletRequest) {
+        // 参数校验
+        ThrowUtils.throwIf(appDeployRequest == null, ErrorCode.PARAMS_ERROR);
+        // 应用 ID 不能为空
+        Long appId = appDeployRequest.getAppId();
+        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用 ID 不能为空或小于等于 0");
+        // 获取当前登录用户
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        // 调用服务部署应用
+        String deployUrl = appService.deployApp(appId, loginUser);
+        // 返回部署地址
+        return ResultUtils.success(deployUrl);
     }
 
 }

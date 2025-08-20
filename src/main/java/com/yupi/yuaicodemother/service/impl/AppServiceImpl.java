@@ -2,10 +2,13 @@ package com.yupi.yuaicodemother.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
+import com.yupi.yuaicodemother.constant.AppConstant;
 import com.yupi.yuaicodemother.core.AiCodeGeneratorFacade;
 import com.yupi.yuaicodemother.exception.BusinessException;
 import com.yupi.yuaicodemother.exception.ErrorCode;
@@ -25,10 +28,9 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.io.File;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -161,6 +163,85 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
                                 .data("")
                                 .build()
                 ));
+    }
+
+    /**
+     * 部署应用
+     * @param appId
+     * @param loginUser
+     * @return
+     */
+    @Override
+    public String deployApp(Long appId, User loginUser) {
+        // 参数校验
+        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID无效");
+        ThrowUtils.throwIf(loginUser == null, ErrorCode.NOT_LOGIN_ERROR, "用户未登录");
+        // 查询应用信息
+        App app = getById(appId);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
+        // 校验应用是否该用户所有
+        ThrowUtils.throwIf(!app.getUserId().equals(loginUser.getId()),
+                ErrorCode.NO_AUTH_ERROR, "没有权限操作该应用");
+        // 检查该应用是否已有deployKey
+        String deployKey = app.getDeployKey();
+        if (StrUtil.isBlank(app.getDeployKey())) {
+//            deployKey = RandomUtil.randomString(6);
+            deployKey = getDeployKey();
+        }
+        // 获取代码生成类型，构建源目录路径
+        String codeGenType = app.getCodeGenType();
+        String sourceDirName = codeGenType + "_" + appId;
+        String sourceDirPath = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + sourceDirName;
+        // 检查源目录是否存在
+        File sourceDir = new File(sourceDirPath);
+        if (!sourceDir.exists() || !sourceDir.isDirectory()) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "源代码目录不存在");
+        }
+        // 复制源代码到部署目录
+        try{
+            FileUtil.copyContent(sourceDir,
+                    new File(AppConstant.CODE_DEPLOY_ROOT_DIR + File.separator + deployKey),
+                    true);
+        } catch (Exception e) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "部署失败，无法更新应用信息");
+        }
+        //更新deployKey和deployTime
+        App updateApp = App.builder()
+                            .id(appId)
+                            .deployKey(deployKey)
+                            .deployedTime(LocalDateTime.now())
+                            .build();
+        boolean updateResult = updateById(updateApp);
+        ThrowUtils.throwIf(!updateResult, ErrorCode.SYSTEM_ERROR, "部署失败，无法更新应用信息");
+        // 生成部署URL并返回
+        return String.format("%s/%s", AppConstant.CODE_DEPLOY_ROOT_DIR, deployKey);
+
+    }
+
+    /**
+     * 生成deployKey
+     * @return
+     */
+    @Override
+    public String getDeployKey() {
+        String deployKey = RandomUtil.randomString(6);
+        if (this.getByDeployKey(deployKey).size()>0){
+            deployKey = getDeployKey();
+        }
+
+        return deployKey;
+    }
+
+    /**
+     * 根据deployKey获取应用
+     * @param deployKey
+     * @return
+     */
+    @Override
+    public List<App> getByDeployKey(String deployKey) {
+        QueryWrapper queryWrapper = QueryWrapper.create()
+                .eq("deployKey", deployKey);
+        return this.list(queryWrapper);
     }
 
 
