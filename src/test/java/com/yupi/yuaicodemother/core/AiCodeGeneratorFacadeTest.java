@@ -29,7 +29,7 @@ class AiCodeGeneratorFacadeTest {
     @Test
     void generateAndSaveCodeStream() {
         Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream(
-                "生成一个最简的记事本网站，要求有内容、增删改查等，不超过30行代码",
+                "生成一个最简的日程表网站，要求有内容、增删改查等，不超过30行代码",
                 CodeGenTypeEnum.MULTI_FILE,
                 1L // 假设 appId 为 1
         );

@@ -1,6 +1,7 @@
 package com.yupi.yuaicodemother.service.impl;
 
 import cn.hutool.core.util.StrUtil;
+import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.yupi.yuaicodemother.exception.ErrorCode;
 import com.yupi.yuaicodemother.exception.ThrowUtils;
@@ -43,6 +44,19 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
                 .userId(userId)
                 .build();
         return this.save(chatHistory);
+    }
+
+    /**
+     * 根据应用ID删除聊天记录
+     * @param appId
+     * @return
+     */
+    @Override
+    public boolean deleteByAppId(Long appId) {
+        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID不能为空");
+        QueryWrapper queryWrapper = QueryWrapper.create()
+                .eq("appId", appId);
+        return this.remove(queryWrapper);
     }
 
 }

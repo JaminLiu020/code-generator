@@ -19,4 +19,11 @@ public interface ChatHistoryService extends IService<ChatHistory> {
      * @return
      */
     boolean addChatMessage(Long appId, String message, String messageType, Long userId);
+
+    /**
+     * 根据应用ID删除聊天记录
+     * @param appId
+     * @return
+     */
+    boolean deleteByAppId(Long appId);
 }
