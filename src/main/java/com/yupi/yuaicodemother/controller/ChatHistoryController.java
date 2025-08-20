@@ -1,8 +1,12 @@
 package com.yupi.yuaicodemother.controller;
 
 import com.mybatisflex.core.paginate.Page;
+import com.mybatisflex.core.query.QueryWrapper;
+import com.yupi.yuaicodemother.annotation.AuthCheck;
 import com.yupi.yuaicodemother.common.BaseResponse;
 import com.yupi.yuaicodemother.common.ResultUtils;
+import com.yupi.yuaicodemother.constant.UserConstant;
+import com.yupi.yuaicodemother.model.dto.ChatHistoryQueryRequest;
 import com.yupi.yuaicodemother.model.entity.User;
 import com.yupi.yuaicodemother.service.UserService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -46,4 +50,16 @@ public class ChatHistoryController {
         return ResultUtils.success(chatHistoryPage);
     }
 
+    @PostMapping("/admin/list/page/vo")
+    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    public BaseResponse<Page<ChatHistory>> listChatHistoryByPageForAdmin(@RequestBody ChatHistoryQueryRequest queryRequest) {
+        if (queryRequest == null) {
+            throw new IllegalArgumentException("查询请求不能为空");
+        }
+        int pageNum = queryRequest.getPageNum();
+        int pageSize = queryRequest.getPageSize();
+        QueryWrapper queryWrapper = chatHistoryService.getQueryWrapper(queryRequest);
+        Page<ChatHistory> chatHistoryPage = chatHistoryService.page(Page.of(pageNum, pageSize), queryWrapper);
+        return ResultUtils.success(chatHistoryPage);
+    }
 }
