@@ -76,7 +76,6 @@ public class AiCodeGeneratorServiceFactory {
                 .streamingChatModel(streamingChatModel)
                 .chatMemory(chatMemory)
                 .build();
-
     }
 
     @Bean
