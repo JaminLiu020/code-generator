@@ -2,6 +2,7 @@
 ### CUSTOM ###
 application-local.yml
 tmp
+.continue
 
 HELP.md
 target/

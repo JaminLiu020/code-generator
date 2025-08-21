@@ -3,12 +3,8 @@ spring:
     name: yu-ai-code-mother-backend
   profiles:
     active: local
-  # mysql
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/ai_code_generator
-    username: root
-    password: "1164686350."
+  devtools:
+    add-properties: false
 
 server:
   port: 8123
@@ -18,10 +14,14 @@ server:
 springdoc:
   group-configs:
     - group: 'default'
-      packages-to-scan: com.yupi.yuaicodemother.controller
+      packages-to-scan: com.jamin.codecube.controller
 # knife4j
 knife4j:
   enable: true
   setting:
     language: zh_cn
+
+logging:
+  level:
+    web: debug
 
