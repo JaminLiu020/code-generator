@@ -2,6 +2,7 @@ package com.jamin.codecube.ai;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.jamin.codecube.service.ChatHistoryService;
 import dev.langchain4j.community.store.memory.chat.redis.RedisChatMemoryStore;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
@@ -27,6 +28,8 @@ public class AiCodeGeneratorServiceFactory {
     private StreamingChatModel streamingChatModel;
     @Autowired
     private RedisChatMemoryStore redisChatMemoryStore;
+    @Autowired
+    private ChatHistoryService chatHistoryService;
 
     /**
      * 使用 Caffeine 缓存来存储 AiCodeGeneratorService 实例
@@ -66,6 +69,8 @@ public class AiCodeGeneratorServiceFactory {
                 .chatMemoryStore(redisChatMemoryStore)
                 .maxMessages(20)
                 .build();
+        // 从数据库中加载对话记录
+        chatHistoryService.loadChatHistoryToMemory(appId, chatMemory, 20);
         return AiServices.builder(AiCodeGeneratorService.class)
                 .chatModel(chatModel)
                 .streamingChatModel(streamingChatModel)

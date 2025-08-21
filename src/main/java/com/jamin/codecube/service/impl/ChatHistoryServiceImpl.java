@@ -1,5 +1,6 @@
 package com.jamin.codecube.service.impl;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jamin.codecube.model.enums.ChatHistoryMessageTypeEnum;
 import com.mybatisflex.core.paginate.Page;
@@ -15,11 +16,16 @@ import com.jamin.codecube.mapper.ChatHistoryMapper;
 import com.jamin.codecube.model.entity.User;
 import com.jamin.codecube.service.AppService;
 import com.jamin.codecube.service.ChatHistoryService;
+import dev.langchain4j.data.message.AiMessage;
+import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.memory.chat.MessageWindowChatMemory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 /**
  *  服务层实现。
@@ -27,6 +33,7 @@ import java.time.LocalDateTime;
  * @author <a href="https://github.com/JaminLiu020">程序员小明</a>
  */
 @Service
+@Slf4j
 public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatHistory>  implements ChatHistoryService{
 
     @Autowired
@@ -127,6 +134,47 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
             queryWrapper.orderBy("createTime", false); // 默认按创建时间降序
         }
         return queryWrapper;
+    }
+
+    /**
+     * 加载聊天记录到内存中
+     * @param appId
+     * @param chatMemory
+     * @param maxCount
+     * @return
+     */
+    @Override
+    public int loadChatHistoryToMemory(Long appId, MessageWindowChatMemory chatMemory, int maxCount){
+        try {
+            // 构造查询条件，起始点为1，而不是0，用于排除最新的用户消息
+            QueryWrapper queryWrapper = QueryWrapper.create()
+                    .eq(ChatHistory::getAppId, appId)
+                    .orderBy(ChatHistory::getCreateTime, false)
+                    .limit(1, maxCount);
+            List<ChatHistory> chatHistoryList = this.list(queryWrapper);
+            if(CollUtil.isEmpty(chatHistoryList)){
+                return 0;
+            }
+            // 记录加载成功的条数
+            int loadedCount = 0;
+            // 清理历史缓存，避免重复加载
+            chatMemory.clear();
+            // 倒序插入到内存中，保证顺序正确
+            for (ChatHistory chatHistory : chatHistoryList.reversed()) {
+                if (chatHistory.getMessageType().equals(ChatHistoryMessageTypeEnum.USER.getValue())) {
+                    chatMemory.add(UserMessage.from(chatHistory.getMessage()));
+                } else if (chatHistory.getMessageType().equals(ChatHistoryMessageTypeEnum.AI.getValue())) {
+                    chatMemory.add(AiMessage.from(chatHistory.getMessage()));
+                }
+                loadedCount++;
+            }
+            log.info("从数据库加载聊天记录，appId: {}, 加载条数: {}", appId, loadedCount);
+            return loadedCount;
+        }
+        catch (Exception e){
+            log.error("从数据库加载聊天记录异常，appId: {}", appId, e.getMessage());
+            return 0;
+        }
     }
 
 }

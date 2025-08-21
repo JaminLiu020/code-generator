@@ -6,6 +6,7 @@ import com.mybatisflex.core.service.IService;
 import com.jamin.codecube.model.dto.ChatHistoryQueryRequest;
 import com.jamin.codecube.model.entity.ChatHistory;
 import com.jamin.codecube.model.entity.User;
+import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 
 import java.time.LocalDateTime;
 
@@ -49,4 +50,13 @@ public interface ChatHistoryService extends IService<ChatHistory> {
      * @return
      */
     QueryWrapper getQueryWrapper(ChatHistoryQueryRequest queryRequest);
+
+    /**
+     * 加载聊天记录到内存
+     * @param appId
+     * @param chatMemory
+     * @param maxCount
+     * @return
+     */
+    int loadChatHistoryToMemory(Long appId, MessageWindowChatMemory chatMemory, int maxCount);
 }
