@@ -40,7 +40,7 @@ public class AiCodeGeneratorFacade {
             throw new IllegalArgumentException("Code generation type cannot be null");
         }
         // 获取 AI 代码生成服务实例
-        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId);
+        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId, codeGenTypeEnum);
         // 根据不同的代码生成类型调用不同的方法
         switch (codeGenTypeEnum) {
             case HTML:
@@ -91,7 +91,7 @@ public class AiCodeGeneratorFacade {
             throw new IllegalArgumentException("Code generation type cannot be null");
         }
         // 获取 AI 代码生成服务实例
-        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId);
+        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId, codeGenTypeEnum);
         // 根据不同的代码生成类型调用不同的方法
         switch (codeGenTypeEnum) {
             case HTML:
@@ -99,6 +99,9 @@ public class AiCodeGeneratorFacade {
                 return proccessCodeStream(codeStream, CodeGenTypeEnum.HTML, appId);
             case MULTI_FILE:
                 codeStream = aiCodeGeneratorService.generateMultiFileCodeStream(userMessage);
+                return proccessCodeStream(codeStream, CodeGenTypeEnum.MULTI_FILE, appId);
+            case VUE_PROJECT:
+                codeStream = aiCodeGeneratorService.generateVueProjectCodeStream(appId, userMessage);
                 return proccessCodeStream(codeStream, CodeGenTypeEnum.MULTI_FILE, appId);
             default:
                 String errorMsg = "Unsupported code generation type: " + codeGenTypeEnum;

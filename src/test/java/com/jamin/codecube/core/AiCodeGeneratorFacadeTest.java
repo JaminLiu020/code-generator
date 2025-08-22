@@ -16,6 +16,9 @@ class AiCodeGeneratorFacadeTest {
     @Autowired
     private AiCodeGeneratorFacade aiCodeGeneratorFacade;
 
+    /**
+     * 测试生成并保存 HTML/CSS/JS 代码
+     */
     @Test
     void generateAndSaveCode() {
         File file = aiCodeGeneratorFacade.generateAndSaveCode(
@@ -26,6 +29,9 @@ class AiCodeGeneratorFacadeTest {
         Assertions.assertNotNull(file, "生成的文件不应为 null");
     }
 
+    /**
+     * 测试生成并保存代码流
+     */
     @Test
     void generateAndSaveCodeStream() {
         Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream(
@@ -38,4 +44,21 @@ class AiCodeGeneratorFacadeTest {
         String completeContent = String.join("", result);
         Assertions.assertNotNull(completeContent);
     }
+
+    /**
+     * 测试生成 Vue 项目代码流
+     */
+    @Test
+    void generateVueProjectCodeStream() {
+        Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream(
+                "简单的任务记录网站，总代码量不超过 200 行",
+                CodeGenTypeEnum.VUE_PROJECT, 1L);
+        // 阻塞等待所有数据收集完成
+        List<String> result = codeStream.collectList().block();
+        // 验证结果
+        Assertions.assertNotNull(result);
+        String completeContent = String.join("", result);
+        Assertions.assertNotNull(completeContent);
+    }
+
 }
