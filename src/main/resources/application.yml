@@ -5,6 +5,8 @@ spring:
     active: local
   devtools:
     add-properties: false
+    restart:
+      exclude: langchain4j/**
   # session 配置
   session:
     store-type: redis

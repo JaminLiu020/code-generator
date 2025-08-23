@@ -25,10 +25,10 @@ public class ReasoningStreamingChatModelConfig {
         final int maxTokens = 131072; // 最大token数 128K
 
         // 测试环境使用
-        final String modelName = "Qwen/Qwen3-Coder-30B-A3B-Instruct";
+//        final String modelName = "Qwen/Qwen3-Coder-30B-A3B-Instruct";
 
         // 生产环境使用
-//        final String modelName = "Qwen/Qwen3-30B-A3B-Thinking-2507";
+        final String modelName = "Qwen/Qwen3-30B-A3B-Thinking-2507";
 
         return OpenAiStreamingChatModel.builder()
                 .baseUrl(baseUrl)

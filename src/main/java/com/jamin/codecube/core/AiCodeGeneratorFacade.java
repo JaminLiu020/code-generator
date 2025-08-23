@@ -1,14 +1,21 @@
 package com.jamin.codecube.core;
 
+import cn.hutool.json.JSONUtil;
 import com.jamin.codecube.ai.AiCodeGeneratorService;
 import com.jamin.codecube.ai.AiCodeGeneratorServiceFactory;
 import com.jamin.codecube.ai.model.HtmlCodeResult;
 import com.jamin.codecube.ai.model.MultiFileCodeResult;
+import com.jamin.codecube.ai.model.message.AiResponseMessage;
+import com.jamin.codecube.ai.model.message.ToolExecutedMessage;
+import com.jamin.codecube.ai.model.message.ToolRequestMessage;
 import com.jamin.codecube.core.parse.CodeParserExecutor;
 import com.jamin.codecube.core.saver.CodeFileSaverExecutor;
 import com.jamin.codecube.model.enums.CodeGenTypeEnum;
 import com.jamin.codecube.exception.BusinessException;
 import com.jamin.codecube.exception.ErrorCode;
+import dev.langchain4j.model.chat.response.ChatResponse;
+import dev.langchain4j.service.TokenStream;
+import dev.langchain4j.service.tool.ToolExecution;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -101,12 +108,45 @@ public class AiCodeGeneratorFacade {
                 codeStream = aiCodeGeneratorService.generateMultiFileCodeStream(userMessage);
                 return proccessCodeStream(codeStream, CodeGenTypeEnum.MULTI_FILE, appId);
             case VUE_PROJECT:
-                codeStream = aiCodeGeneratorService.generateVueProjectCodeStream(appId, userMessage);
-                return proccessCodeStream(codeStream, CodeGenTypeEnum.MULTI_FILE, appId);
+                TokenStream tokenStream = aiCodeGeneratorService.generateVueProjectCodeStream(appId, userMessage);
+                return proccessTokenStream(tokenStream);
             default:
                 String errorMsg = "Unsupported code generation type: " + codeGenTypeEnum;
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, errorMsg);
         }
+    }
+
+    /**
+     * 将 TokenStream 转换为 Flux<String>，并传递工具调用信息
+     * @param tokenStream
+     * @return
+     */
+    private Flux<String> proccessTokenStream(TokenStream tokenStream) {
+        //  将 TokenStream 转换为 Flux<String>
+        return Flux.create(sink -> {
+            tokenStream.onPartialResponse((String partialResponse) -> {
+                        // 将响应转换为 AiResponseMessage
+                        AiResponseMessage aiResponseMessage = new AiResponseMessage(partialResponse);
+                        // 将消息转换为 JSON 字符串并发送到 Flux
+                        sink.next(JSONUtil.toJsonStr(aiResponseMessage));
+                    })
+                    .onPartialToolExecutionRequest((index, toolExecutionRequest) -> {
+                        ToolRequestMessage toolRequestMessage = new ToolRequestMessage(toolExecutionRequest);
+                        sink.next(JSONUtil.toJsonStr(toolRequestMessage));
+                    })
+                    .onToolExecuted((ToolExecution toolExecution) -> {
+                        ToolExecutedMessage toolExecutedMessage = new ToolExecutedMessage(toolExecution);
+                        sink.next(JSONUtil.toJsonStr(toolExecutedMessage));
+                    })
+                    .onCompleteResponse((ChatResponse response) -> {
+                        sink.complete();
+                    })
+                    .onError((Throwable error) -> {
+                        error.printStackTrace();
+                        sink.error(error);
+                    })
+                    .start();
+        });
     }
 
     /**
