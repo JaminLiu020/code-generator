@@ -9,6 +9,7 @@ import com.jamin.codecube.constant.AppConstant;
 import com.jamin.codecube.core.AiCodeGeneratorFacade;
 import com.jamin.codecube.core.builder.VueProjectBuilder;
 import com.jamin.codecube.core.handler.StreamHandlerExecutor;
+import com.jamin.codecube.manager.CosManager;
 import com.jamin.codecube.mapper.AppMapper;
 import com.jamin.codecube.model.dto.app.AppQueryRequest;
 import com.jamin.codecube.model.entity.App;
@@ -19,6 +20,7 @@ import com.jamin.codecube.model.vo.AppVO;
 import com.jamin.codecube.model.vo.UserVO;
 import com.jamin.codecube.service.AppService;
 import com.jamin.codecube.service.ChatHistoryService;
+import com.jamin.codecube.service.ScreenshotService;
 import com.jamin.codecube.service.UserService;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
@@ -55,6 +57,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
     private StreamHandlerExecutor streamHandlerExecutor;
     @Autowired
     private VueProjectBuilder vueProjectBuilder;
+    @Autowired
+    private ScreenshotService screenshotService;
 
     /**
      * 获取应用的视图对象。
@@ -171,31 +175,31 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
      */
     @Override
     public String deployApp(Long appId, User loginUser) {
-        // 参数校验
+        // 1. 参数校验
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID无效");
         ThrowUtils.throwIf(loginUser == null, ErrorCode.NOT_LOGIN_ERROR, "用户未登录");
-        // 查询应用信息
+        // 2. 查询应用信息
         App app = getById(appId);
         ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
-        // 校验应用是否该用户所有
+        // 3. 校验应用是否该用户所有
         ThrowUtils.throwIf(!app.getUserId().equals(loginUser.getId()),
                 ErrorCode.NO_AUTH_ERROR, "没有权限操作该应用");
-        // 检查该应用是否已有deployKey
+        // 4. 检查该应用是否已有deployKey
         String deployKey = app.getDeployKey();
         if (StrUtil.isBlank(app.getDeployKey())) {
 //            deployKey = RandomUtil.randomString(6);
             deployKey = getDeployKey();
         }
-        // 获取代码生成类型，构建源目录路径
+        // 5. 获取代码生成类型，构建源目录路径
         String codeGenType = app.getCodeGenType();
         String sourceDirName = codeGenType + "_" + appId;
         String sourceDirPath = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + sourceDirName;
-        // 检查源目录是否存在
+        // 6. 检查源目录是否存在
         File sourceDir = new File(sourceDirPath);
         if (!sourceDir.exists() || !sourceDir.isDirectory()) {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "源代码目录不存在");
         }
-        // Vue 项目特殊处理，先构建再部署
+        // 7. Vue 项目特殊处理，先构建再部署
         CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(codeGenType);
         if (codeGenTypeEnum == CodeGenTypeEnum.VUE_PROJECT) {
             // 执行构建
@@ -209,7 +213,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
             sourceDir = distDir;
             log.info("Vue 项目构建成功，将部署 dist 目录：{}", distDir.getAbsolutePath());
         }
-        // 复制源代码到部署目录
+        // 8. 复制源代码到部署目录
         try{
             FileUtil.copyContent(sourceDir,
                     new File(AppConstant.CODE_DEPLOY_ROOT_DIR + File.separator + deployKey),
@@ -217,7 +221,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         } catch (Exception e) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "部署失败，无法更新应用信息");
         }
-        //更新deployKey和deployTime
+        // 9. 更新deployKey和deployTime
         App updateApp = App.builder()
                             .id(appId)
                             .deployKey(deployKey)
@@ -225,9 +229,43 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
                             .build();
         boolean updateResult = updateById(updateApp);
         ThrowUtils.throwIf(!updateResult, ErrorCode.SYSTEM_ERROR, "部署失败，无法更新应用信息");
-        // 生成部署URL并返回
-        return String.format("%s/%s", AppConstant.CODE_DEPLOY_ROOT_DIR, deployKey);
+        // 10. 构建应用访问 URL
+        String appDeployUrl = String.format("%s/%s/", AppConstant.CODE_DEPLOY_HOST, deployKey);
+        // 11. 异步生成截图并更新应用封面
+        generateAppScreenshotAsync(appId, appDeployUrl);
+        return appDeployUrl;
+    }
 
+    /**
+     * 异步生成应用截图并更新应用封面
+     * @param appId
+     * @param appDeployUrl
+     */
+    @Override
+    public void generateAppScreenshotAsync(Long appId, String appDeployUrl) {
+        Thread.startVirtualThread(() -> {
+            try {
+                // 生成应用截图
+                String screenshotUrl = screenshotService.generateAndUploadScreenshot(appDeployUrl);
+                if (StrUtil.isNotBlank(screenshotUrl)) {
+                    // 更新应用封面
+                    App updateApp = App.builder()
+                            .id(appId)
+                            .cover(screenshotUrl)
+                            .build();
+                    boolean updateResult = updateById(updateApp);
+                    if (!updateResult) {
+                        log.error("更新应用封面失败，应用ID: {}", appId);
+                    } else {
+                        log.info("应用封面更新成功: {}", screenshotUrl);
+                    }
+                } else {
+                    log.error("生成应用截图失败，应用ID: {}", appId);
+                }
+            } catch (Exception e) {
+                log.error("异步生成应用截图时发生异常: {}", e.getMessage());
+            }
+        });
     }
 
     /**

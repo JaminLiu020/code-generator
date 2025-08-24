@@ -27,24 +27,39 @@ import java.util.UUID;
 @Slf4j
 public class WebScreenshotUtils {
 
-    private static final WebDriver webDriver;
+//    private static final WebDriver webDriver;
+//
+//    /**
+//     * 全局静态初始化，避免重复初始化驱动
+//     */
+//    static {
+//        final int DEFAULT_WIDTH = 1600;
+//        final int DEFAULT_HEIGHT = 900;
+//        webDriver = initChromeDriver(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+//    }
+//
+//    /**
+//     * 退出时销毁
+//     */
+//    @PreDestroy
+//    public void destroy() {
+//        webDriver.quit();
+//    }
 
-    /**
-     * 全局静态初始化，避免重复初始化驱动
-     */
-    static {
-        final int DEFAULT_WIDTH = 1600;
-        final int DEFAULT_HEIGHT = 900;
-        webDriver = initChromeDriver(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+    // 使用 ThreadLocal 管理 WebDriver 实例，避免多线程环境下的冲突
+    private static final ThreadLocal<WebDriver> driverThreadLocal = new ThreadLocal<>();
+
+    public static WebDriver getWebDriver() {
+        WebDriver driver = driverThreadLocal.get();
+        if (driver == null) {
+            final int DEFAULT_WIDTH = 1600;
+            final int DEFAULT_HEIGHT = 900;
+            driver = initChromeDriver(DEFAULT_WIDTH, DEFAULT_HEIGHT);
+            driverThreadLocal.set(driver);
+        }
+        return driver;
     }
 
-    /**
-     * 退出时销毁
-     */
-    @PreDestroy
-    public void destroy() {
-        webDriver.quit();
-    }
 
     /**
      * 初始化 Chrome 浏览器驱动
@@ -157,6 +172,8 @@ public class WebScreenshotUtils {
             final String IMAGE_SUFFIX = ".png";
             // 原始截图文件路径
             String imageSavePath = rootPath + File.separator + RandomUtil.randomNumbers(5) + IMAGE_SUFFIX;
+            // 获取 WebDriver 实例
+            WebDriver webDriver = getWebDriver();
             // 访问网页
             webDriver.get(webUrl);
             // 等待页面加载完成

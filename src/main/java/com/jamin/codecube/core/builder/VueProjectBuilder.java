@@ -137,7 +137,7 @@ public class VueProjectBuilder {
                 log.info("命令执行成功: {}", command);
                 return true;
             } else {
-                log.error("命令执行失败，退出码: {}", exitCode);
+                log.error("命令:{} 执行失败，退出码: {}", command, exitCode);
                 return false;
             }
         } catch (Exception e) {
