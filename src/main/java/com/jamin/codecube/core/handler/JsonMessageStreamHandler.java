@@ -5,10 +5,13 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 import com.jamin.codecube.ai.model.message.*;
+import com.jamin.codecube.constant.AppConstant;
+import com.jamin.codecube.core.builder.VueProjectBuilder;
 import com.jamin.codecube.model.entity.User;
 import com.jamin.codecube.model.enums.ChatHistoryMessageTypeEnum;
 import com.jamin.codecube.service.ChatHistoryService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
@@ -22,6 +25,8 @@ import java.util.Set;
 @Slf4j
 @Component
 public class JsonMessageStreamHandler {
+    @Autowired
+    private VueProjectBuilder vueProjectBuilder;
 
     /**
      * 处理 TokenStream（VUE_PROJECT）
@@ -51,6 +56,9 @@ public class JsonMessageStreamHandler {
                     // 将收集到的聊天记录存储到对话记录表
                     String aiResponse = chatHistoryStringBuilder.toString();
                     chatHistoryService.addChatMessage(appId, aiResponse, ChatHistoryMessageTypeEnum.AI.getValue(), loginUser.getId());
+                    // 异步构造 Vue 项目
+                    String projectDir = AppConstant.CODE_OUTPUT_ROOT_DIR + "/vue_project_" + appId;
+                    vueProjectBuilder.buildProjectAsync(projectDir);
                 })
                 .doOnError(error -> {
                     // 错误记录也要存到对话记录表

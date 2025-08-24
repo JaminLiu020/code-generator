@@ -7,6 +7,7 @@ import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jamin.codecube.constant.AppConstant;
 import com.jamin.codecube.core.AiCodeGeneratorFacade;
+import com.jamin.codecube.core.builder.VueProjectBuilder;
 import com.jamin.codecube.core.handler.StreamHandlerExecutor;
 import com.jamin.codecube.mapper.AppMapper;
 import com.jamin.codecube.model.dto.app.AppQueryRequest;
@@ -52,6 +53,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
     private ChatHistoryService chatHistoryService;
     @Autowired
     private StreamHandlerExecutor streamHandlerExecutor;
+    @Autowired
+    private VueProjectBuilder vueProjectBuilder;
 
     /**
      * 获取应用的视图对象。
@@ -191,6 +194,20 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         File sourceDir = new File(sourceDirPath);
         if (!sourceDir.exists() || !sourceDir.isDirectory()) {
             throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "源代码目录不存在");
+        }
+        // Vue 项目特殊处理，先构建再部署
+        CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(codeGenType);
+        if (codeGenTypeEnum == CodeGenTypeEnum.VUE_PROJECT) {
+            // 执行构建
+            boolean builtSuccess = vueProjectBuilder.buildProject(sourceDirPath);
+            ThrowUtils.throwIf(!builtSuccess, ErrorCode.SYSTEM_ERROR, "Vue项目构建失败");
+            // 检查 dist 目录是否存在
+            File distDir = new File(sourceDirPath + File.separator + "dist");
+            ThrowUtils.throwIf(!distDir.exists() || !distDir.isDirectory(),
+                    ErrorCode.NOT_FOUND_ERROR, "Vue 项目构建完成，但未生成 dist 目录");
+            // dist 目录作为部署源
+            sourceDir = distDir;
+            log.info("Vue 项目构建成功，将部署 dist 目录：{}", distDir.getAbsolutePath());
         }
         // 复制源代码到部署目录
         try{

@@ -8,11 +8,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-//@ConfigurationProperties(prefix = "langchain4j.open-ai.streaming-chat-model")
+@ConfigurationProperties(prefix = "langchain4j.open-ai.streaming-chat-model")
 @Data
 public class ReasoningStreamingChatModelConfig {
-//    private String baseUrl;
-//    private String apiKey;
+    private String baseUrl;
+    private String apiKey;
 
     /**
      * 推理流式聊天模型配置
@@ -20,15 +20,18 @@ public class ReasoningStreamingChatModelConfig {
      */
     @Bean(name = "reasoningStreamingChatModel")
     public StreamingChatModel reasoningStreamingChatModel() {
-        final String baseUrl = "https://api.siliconflow.cn/";
-        final String apiKey = "sk-manljlljcmxgwvvjulrcfvlmyxkidmactxczihbegoxmimrk";
-        final int maxTokens = 131072; // 最大token数 128K
 
         // 测试环境使用
-//        final String modelName = "Qwen/Qwen3-Coder-30B-A3B-Instruct";
+        final String modelName = "Qwen/Qwen3-Coder-30B-A3B-Instruct";
+//        final String modelName = "deepseek-chat";
 
         // 生产环境使用
-        final String modelName = "Qwen/Qwen3-30B-A3B-Thinking-2507";
+//        final String modelName = "Qwen/Qwen3-30B-A3B-Thinking-2507";
+//        final String modelName = "Qwen/Qwen3-Coder-480B-A35B-Instruct";
+//        final String modelName = "deepseek-ai/DeepSeek-R1";
+//        final String modelName = "deepseek-reasoner";
+
+        final int maxTokens = 131071; // 最大token数 128K = 131072
 
         return OpenAiStreamingChatModel.builder()
                 .baseUrl(baseUrl)
