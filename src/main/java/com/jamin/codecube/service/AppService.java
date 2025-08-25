@@ -1,5 +1,7 @@
 package com.jamin.codecube.service;
 
+import com.jamin.codecube.common.BaseResponse;
+import com.jamin.codecube.common.DeleteRequest;
 import com.jamin.codecube.model.dto.app.AppAddRequest;
 import com.jamin.codecube.model.dto.app.AppQueryRequest;
 import com.jamin.codecube.model.entity.App;
@@ -86,4 +88,12 @@ public interface AppService extends IService<App> {
      * @return
      */
     Long createApp(AppAddRequest appAddRequest, User user);
+
+    /**
+     * 删除 App 并清理项目文件、部署文件和封面文件
+     * @param deleteRequest
+     * @param loginUser
+     * @return
+     */
+    boolean deleteApp(DeleteRequest deleteRequest, User loginUser);
 }

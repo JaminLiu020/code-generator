@@ -114,18 +114,13 @@ public class AppController {
         if (deleteRequest == null || deleteRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
+        // 获取登陆用户
         User loginUser = userService.getLoginUser(request);
-        long id = deleteRequest.getId();
-        // 判断是否存在
-        App oldApp = appService.getById(id);
-        ThrowUtils.throwIf(oldApp == null, ErrorCode.NOT_FOUND_ERROR);
-        // 仅本人或管理员可删除
-        if (!oldApp.getUserId().equals(loginUser.getId()) && !UserConstant.ADMIN_ROLE.equals(loginUser.getUserRole())) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-        }
-        boolean result = appService.removeById(id);
+        // 删除 App
+        boolean result = appService.deleteApp(deleteRequest, loginUser);
 
         return ResultUtils.success(result);
+
     }
 
     /**
@@ -208,11 +203,11 @@ public class AppController {
         if (deleteRequest == null || deleteRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        long id = deleteRequest.getId();
-        // 判断是否存在
-        App oldApp = appService.getById(id);
-        ThrowUtils.throwIf(oldApp == null, ErrorCode.NOT_FOUND_ERROR);
-        boolean result = appService.removeById(id);
+        // 构建管理员用户
+        User adminUser = User.builder().userRole(UserConstant.ADMIN_ROLE).build();
+        // 删除 App
+        boolean result = appService.deleteApp(deleteRequest, adminUser);
+
         return ResultUtils.success(result);
     }
 

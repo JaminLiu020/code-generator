@@ -6,7 +6,10 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jamin.codecube.ai.AiCodeGenTypeRoutingService;
+import com.jamin.codecube.common.DeleteRequest;
+import com.jamin.codecube.common.ResultUtils;
 import com.jamin.codecube.constant.AppConstant;
+import com.jamin.codecube.constant.UserConstant;
 import com.jamin.codecube.core.AiCodeGeneratorFacade;
 import com.jamin.codecube.core.builder.VueProjectBuilder;
 import com.jamin.codecube.core.handler.StreamHandlerExecutor;
@@ -350,5 +353,32 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         log.info("应用创建成功，ID：{}，生成类型：{}", app.getId(), codeGenTypeEnum.getValue());
         return app.getId();
+    }
+
+    /**
+     * 删除 App，并删除项目文件、部署文件和封面文件
+     * @param deleteRequest
+     * @param loginUser
+     * @return
+     */
+    @Override
+    public boolean deleteApp(DeleteRequest deleteRequest, User loginUser) {
+
+        long id = deleteRequest.getId();
+        // 判断 App 是否存在
+        App oldApp = this.getById(id);
+        ThrowUtils.throwIf(oldApp == null, ErrorCode.NOT_FOUND_ERROR);
+        // 仅本人或管理员可删除
+        if (!oldApp.getUserId().equals(loginUser.getId()) && !UserConstant.ADMIN_ROLE.equals(loginUser.getUserRole())) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
+        }
+        // 将对应的App条目的is_deleted置为1
+        App newApp = App.builder()
+                .id(oldApp.getId())
+                .isDelete(AppConstant.IS_DELETED)
+                .build();
+        boolean result = this.updateById(newApp, true);
+
+        return result;
     }
 }

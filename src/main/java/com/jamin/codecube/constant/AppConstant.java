@@ -16,6 +16,11 @@ public interface AppConstant {
     Integer DEFAULT_APP_PRIORITY = 0;
 
     /**
+     * App 删除标志位
+     */
+    Integer IS_DELETED = 1;
+
+    /**
      * 应用生成目录
      */
     String CODE_OUTPUT_ROOT_DIR = System.getProperty("user.dir") + "/tmp/code_output";
