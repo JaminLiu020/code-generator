@@ -8,11 +8,15 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConfigurationProperties(prefix = "langchain4j.open-ai.streaming-chat-model")
+@ConfigurationProperties(prefix = "langchain4j.open-ai.reasoning-streaming-chat-model")
 @Data
 public class ReasoningStreamingChatModelConfig {
     private String baseUrl;
     private String apiKey;
+    private String modelName;
+    private int maxTokens;
+    private boolean logRequests; // 是否记录请求
+    private boolean logResponses; // 是否记录响应
 
     /**
      * 推理流式聊天模型配置
@@ -21,25 +25,13 @@ public class ReasoningStreamingChatModelConfig {
     @Bean(name = "reasoningStreamingChatModel")
     public StreamingChatModel reasoningStreamingChatModel() {
 
-        // 测试环境使用
-//        final String modelName = "Qwen/Qwen3-Coder-30B-A3B-Instruct";
-//        final String modelName = "deepseek-chat";
-
-        // 生产环境使用
-        final String modelName = "Qwen/Qwen3-30B-A3B-Thinking-2507";
-//        final String modelName = "Qwen/Qwen3-Coder-480B-A35B-Instruct";
-//        final String modelName = "deepseek-ai/DeepSeek-R1";
-//        final String modelName = "deepseek-reasoner";
-
-        final int maxTokens = 131071; // 最大token数 128K = 131072
-
         return OpenAiStreamingChatModel.builder()
                 .baseUrl(baseUrl)
                 .apiKey(apiKey)
                 .modelName(modelName)
                 .maxTokens(maxTokens)
-                .logRequests(true) // 是否记录请求
-                .logResponses(true) // 是否记录响应
+                .logRequests(logRequests) // 是否记录请求
+                .logResponses(logResponses) // 是否记录响应
                 .build();
     }
 }
