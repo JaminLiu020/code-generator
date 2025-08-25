@@ -1,11 +1,13 @@
 package com.jamin.codecube.service;
 
+import com.jamin.codecube.model.dto.app.AppAddRequest;
 import com.jamin.codecube.model.dto.app.AppQueryRequest;
 import com.jamin.codecube.model.entity.App;
 import com.jamin.codecube.model.entity.User;
 import com.jamin.codecube.model.vo.AppVO;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
+import jakarta.servlet.http.HttpServletRequest;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
@@ -75,4 +77,13 @@ public interface AppService extends IService<App> {
      * @return
      */
     List<App> getByDeployKey(String deployKey);
+
+
+    /**
+     * 创建 App
+     * @param appAddRequest
+     * @param user
+     * @return
+     */
+    Long createApp(AppAddRequest appAddRequest, User user);
 }

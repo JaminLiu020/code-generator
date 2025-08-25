@@ -5,12 +5,13 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
+import com.jamin.codecube.ai.AiCodeGenTypeRoutingService;
 import com.jamin.codecube.constant.AppConstant;
 import com.jamin.codecube.core.AiCodeGeneratorFacade;
 import com.jamin.codecube.core.builder.VueProjectBuilder;
 import com.jamin.codecube.core.handler.StreamHandlerExecutor;
-import com.jamin.codecube.manager.CosManager;
 import com.jamin.codecube.mapper.AppMapper;
+import com.jamin.codecube.model.dto.app.AppAddRequest;
 import com.jamin.codecube.model.dto.app.AppQueryRequest;
 import com.jamin.codecube.model.entity.App;
 import com.jamin.codecube.model.entity.User;
@@ -59,6 +60,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
     private VueProjectBuilder vueProjectBuilder;
     @Autowired
     private ScreenshotService screenshotService;
+    @Autowired
+    private AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService;
 
     /**
      * 获取应用的视图对象。
@@ -321,4 +324,31 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         return super.removeById(id);
     }
 
+    /**
+     * 创建 App
+     * @param appAddRequest
+     * @param loginUser
+     * @return
+     */
+    @Override
+    public Long createApp(AppAddRequest appAddRequest, User loginUser){
+        // 参数校验
+        String initPrompt = appAddRequest.getInitPrompt();
+        ThrowUtils.throwIf(StrUtil.isBlank(initPrompt), ErrorCode.PARAMS_ERROR, "初始化 prompt 不能为空");
+
+        // 构造入库对象
+        App app = new App();
+        BeanUtil.copyProperties(appAddRequest, app);
+        app.setUserId(loginUser.getId());
+        // 应用名称暂时为 initPrompt 前 12 位
+        app.setAppName(initPrompt.substring(0, Math.min(initPrompt.length(), 12)));
+        // 暂时设置为多文件生成
+        CodeGenTypeEnum codeGenTypeEnum = aiCodeGenTypeRoutingService.routeCodeGenType(initPrompt);
+        app.setCodeGenType(codeGenTypeEnum.getValue());
+        // 插入数据库
+        boolean result = this.save(app);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        log.info("应用创建成功，ID：{}，生成类型：{}", app.getId(), codeGenTypeEnum.getValue());
+        return app.getId();
+    }
 }

@@ -16,9 +16,11 @@ public interface AiCodeGeneratorService {
      * @param userMessage 用户提示词
      * @return AI 的输出结果
      */
+    @Deprecated
     @SystemMessage(fromResource = "prompt/codegen-html-system-prompt.txt")
     HtmlCodeResult generateHtmlCode(String userMessage);
 
+    @Deprecated
     @SystemMessage(fromResource = "prompt/codegen-html-system-prompt.txt")
     HtmlCodeResult generateHtmlCodeWithMemory(@UserMessage String userMessage);
 
@@ -28,6 +30,7 @@ public interface AiCodeGeneratorService {
      * @param userMessage 用户提示词
      * @return AI 的输出结果
      */
+    @Deprecated
     @SystemMessage(fromResource = "prompt/codegen-multi-file-system-prompt.txt")
     MultiFileCodeResult generateMultiFileCode(String userMessage);
 

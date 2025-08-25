@@ -34,14 +34,13 @@ public class AiCodeGeneratorFacade {
     private AiCodeGeneratorServiceFactory aiCodeGeneratorServiceFactory;
 
 
-
-
     /**
      * 生成并保存代码文件
      * @param userMessage
      * @param codeGenTypeEnum
      * @return
      */
+    @Deprecated
     public File generateAndSaveCode(String userMessage, CodeGenTypeEnum codeGenTypeEnum, Long appId){
         if (codeGenTypeEnum == null) {
             throw new IllegalArgumentException("Code generation type cannot be null");
