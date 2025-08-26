@@ -2,7 +2,7 @@ package com.jamin.codecube.ai;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.jamin.codecube.ai.tools.FileWriteTool;
+import com.jamin.codecube.ai.tools.*;
 import com.jamin.codecube.exception.BusinessException;
 import com.jamin.codecube.exception.ErrorCode;
 import com.jamin.codecube.model.enums.CodeGenTypeEnum;
@@ -35,7 +35,6 @@ public class AiCodeGeneratorServiceFactory {
     @Autowired
     @Qualifier("reasoningStreamingChatModel")
     private StreamingChatModel reasoningStreamingChatModel;
-
     @Autowired
     private RedisChatMemoryStore redisChatMemoryStore;
     @Autowired
@@ -116,7 +115,13 @@ public class AiCodeGeneratorServiceFactory {
                 return AiServices.builder(AiCodeGeneratorService.class)
                         .streamingChatModel(reasoningStreamingChatModel)
                         .chatMemoryProvider(memoryId -> chatMemory)
-                        .tools(new FileWriteTool())
+                        .tools(
+                                new FileWriteTool(),
+                                new FileDeleteTool(),
+                                new FileDirReadTool(),
+                                new FileReadTool(),
+                                new FileModifyTool()
+                        )
                         .hallucinatedToolNameStrategy(toolExecutionRequest ->
                             ToolExecutionResultMessage.from(toolExecutionRequest,
                                     "there is no tool called " + toolExecutionRequest.name()))
