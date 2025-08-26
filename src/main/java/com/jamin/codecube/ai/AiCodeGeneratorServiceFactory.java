@@ -39,6 +39,8 @@ public class AiCodeGeneratorServiceFactory {
     private RedisChatMemoryStore redisChatMemoryStore;
     @Autowired
     private ChatHistoryService chatHistoryService;
+    @Autowired
+    private ToolManager toolManager;
 
     /**
      * 使用 Caffeine 缓存来存储 AiCodeGeneratorService 实例
@@ -115,13 +117,7 @@ public class AiCodeGeneratorServiceFactory {
                 return AiServices.builder(AiCodeGeneratorService.class)
                         .streamingChatModel(reasoningStreamingChatModel)
                         .chatMemoryProvider(memoryId -> chatMemory)
-                        .tools(
-                                new FileWriteTool(),
-                                new FileDeleteTool(),
-                                new FileDirReadTool(),
-                                new FileReadTool(),
-                                new FileModifyTool()
-                        )
+                        .tools(toolManager.getAllTools())
                         .hallucinatedToolNameStrategy(toolExecutionRequest ->
                             ToolExecutionResultMessage.from(toolExecutionRequest,
                                     "there is no tool called " + toolExecutionRequest.name()))

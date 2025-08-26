@@ -3,6 +3,7 @@
 application-local.yml
 tmp
 .continue
+*-bkp.*
 
 HELP.md
 target/
