@@ -1,6 +1,7 @@
 package com.jamin.codecube.langgraph4j.state;
 
 import com.jamin.codecube.langgraph4j.model.ImageResource;
+import com.jamin.codecube.langgraph4j.model.QualityResult;
 import com.jamin.codecube.model.enums.CodeGenTypeEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -72,8 +73,19 @@ public class WorkflowContext implements Serializable {
      */
     private String errorMessage;
 
+    /**
+     * 质量检查结果
+     */
+    private QualityResult qualityResult;
+
+    /**
+     * 质量检查次数
+     */
+    private int qualityCheckCount;
+
+
     @Serial
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 2L;
 
     // ========== 上下文操作方法 ==========
 

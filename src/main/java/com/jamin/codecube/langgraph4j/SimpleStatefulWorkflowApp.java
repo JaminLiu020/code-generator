@@ -62,6 +62,7 @@ public class SimpleStatefulWorkflowApp {
         WorkflowContext initialContext = WorkflowContext.builder()
                 .originalPrompt("请帮我生成一个网站")
                 .currentStep("初始化")
+                .qualityCheckCount(0)
                 .build();
 
         log.info("初始输入: {}", initialContext.getOriginalPrompt());
