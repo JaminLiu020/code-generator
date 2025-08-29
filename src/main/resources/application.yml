@@ -1,6 +1,6 @@
 spring:
   application:
-    name: yu-ai-code-mother-backend
+    name: ming-code-cube-backend
   profiles:
     active: local
   devtools:

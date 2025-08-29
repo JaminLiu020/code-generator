@@ -16,6 +16,7 @@ import dev.langchain4j.service.AiServices;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -41,6 +42,8 @@ public class AiCodeGeneratorServiceFactory {
     private ChatHistoryService chatHistoryService;
     @Autowired
     private ToolManager toolManager;
+    @Value("${langchain4j.openai.max-messages}")
+    private int maxMessages;
 
     /**
      * 使用 Caffeine 缓存来存储 AiCodeGeneratorService 实例
@@ -99,7 +102,7 @@ public class AiCodeGeneratorServiceFactory {
         MessageWindowChatMemory chatMemory = MessageWindowChatMemory.builder()
                 .id(appId)
                 .chatMemoryStore(redisChatMemoryStore)
-                .maxMessages(20)
+                .maxMessages(maxMessages)
                 .build();
         // 从数据库中加载对话记录
         chatHistoryService.loadChatHistoryToMemory(appId, chatMemory, 20);
