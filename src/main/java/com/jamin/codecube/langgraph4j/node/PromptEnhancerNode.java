@@ -32,7 +32,7 @@ public class PromptEnhancerNode {
             // 如果有图片资源，则添加图片信息
             if (CollUtil.isNotEmpty(imageList) || StrUtil.isNotBlank(imageListStr)) {
                 enhancedPromptBuilder.append("\n\n## 可用素材资源\n");
-                enhancedPromptBuilder.append("请在生成网站使用以下图片资源，将这些图片合理地嵌入到网站的相应位置中。\n");
+                enhancedPromptBuilder.append("请在生成网站时使用以下图片资源，将这些图片合理地嵌入到网站的相应位置中。\n");
                 if (CollUtil.isNotEmpty(imageList)) {
                     for (ImageResource image : imageList) {
                         enhancedPromptBuilder.append("- ")

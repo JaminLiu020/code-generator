@@ -39,6 +39,9 @@ public class CodeQualityCheckNode {
                             .suggestions(List.of("请确保代码生成成功"))
                             .build();
                 } else {
+                    // 在代码内容前添加创建时的 prompt，帮助 AI 理解需求
+                    codeContent = "以下是创建时的prompt，请你在检查其他方面的同时检查生成的代码中的图片URL是否有误，并给出改进建议。\n\n"
+                            +context.getEnhancedPrompt() + "\n\n" + codeContent;
                     // 2. 调用 AI 进行代码质量检查
                     CodeQualityCheckService qualityCheckService = SpringContextUtil.getBean(CodeQualityCheckService.class);
                     qualityResult = qualityCheckService.checkCodeQuality(codeContent);
