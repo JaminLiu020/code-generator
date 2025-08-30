@@ -279,17 +279,19 @@ public class AppController {
      * @param appId 应用 ID
      * @param message 对话消息
      * @param request 请求
+     * @param agent 是否使用 Agent
      * @return
      */
     @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ServerSentEvent<String>> chatToGenCode(
             @RequestParam("appId") Long appId,
             @RequestParam("message") String message,
+            @RequestParam(required = false) boolean agent,
             HttpServletRequest request) {
         // 获取当前登录用户
         User loginUser = userService.getLoginUser(request);
         // 调用服务生成代码流
-        Flux<String> contentFlux = appService.chatToGenCode(appId, message, loginUser);
+        Flux<String> contentFlux = appService.chatToGenCode(appId, message, loginUser, agent);
         return contentFlux
                 .map(chunk -> {
                     Map<String, String> wrapper = Map.of("d", chunk);

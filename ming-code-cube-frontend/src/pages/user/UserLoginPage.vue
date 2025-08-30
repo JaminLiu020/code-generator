@@ -29,6 +29,7 @@
 import { reactive } from 'vue'
 import { userLogin } from '@/api/userController.ts'
 import { useLoginUserStore } from '@/stores/loginUser.ts'
+import { useAgentStore } from '@/stores/agent.ts'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 
@@ -39,6 +40,7 @@ const formState = reactive<API.UserLoginRequest>({
 
 const router = useRouter()
 const loginUserStore = useLoginUserStore()
+const agentStore = useAgentStore()
 
 /**
  * 提交表单
@@ -49,6 +51,8 @@ const handleSubmit = async (values: any) => {
   // 登录成功，把登录态保存到全局状态中
   if (res.data.code === 0 && res.data.data) {
     await loginUserStore.fetchLoginUser()
+    // 登录成功后重置工作流状态
+    agentStore.resetAgentState()
     message.success('登录成功')
     router.push({
       path: '/',

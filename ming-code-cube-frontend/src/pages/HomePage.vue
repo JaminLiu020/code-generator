@@ -3,12 +3,14 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { useLoginUserStore } from '@/stores/loginUser'
+import { useAgentStore } from '@/stores/agent'
 import { addApp, listMyAppVoByPage, listGoodAppVoByPage } from '@/api/appController'
 import { getDeployUrl } from '@/config/env'
 import AppCard from '@/components/AppCard.vue'
 
 const router = useRouter()
 const loginUserStore = useLoginUserStore()
+const agentStore = useAgentStore()
 
 // 用户提示词
 const userPrompt = ref('')
@@ -58,9 +60,10 @@ const createApp = async () => {
 
     if (res.data.code === 0 && res.data.data) {
       message.success('应用创建成功')
-      // 跳转到对话页面，确保ID是字符串类型
+      // 跳转到对话页面，确保ID是字符串类型，并传递agent状态
       const appId = String(res.data.data)
-      await router.push(`/app/chat/${appId}`)
+      const agentParam = agentStore.isAgentEnabled ? '?agent=true' : '?agent=false'
+      await router.push(`/app/chat/${appId}${agentParam}`)
     } else {
       message.error('创建失败：' + res.data.message)
     }
@@ -133,6 +136,9 @@ const viewWork = (app: API.AppVO) => {
 
 // 页面加载时获取数据
 onMounted(() => {
+  // 每次进入首页时重置工作流状态为关闭
+  agentStore.resetAgentState()
+  
   loadMyApps()
   loadFeaturedApps()
 
@@ -174,7 +180,26 @@ onMounted(() => {
           :maxlength="1000"
           class="prompt-input"
         />
+        
+        <!-- Agent开关和发送按钮 -->
         <div class="input-actions">
+          <!-- 工作流开关 -->
+          <a-tooltip 
+            title="此功能尚未开发完善，仅供体验😊" 
+            :mouse-enter-delay="0"
+            placement="top"
+          >
+            <div class="agent-switch">
+              <span class="agent-label">工作流</span>
+              <a-switch
+                v-model:checked="agentStore.isAgentEnabled"
+                size="small"
+                :checked-children="'开'"
+                :un-checked-children="'关'"
+              />
+            </div>
+          </a-tooltip>
+          
           <a-button type="primary" size="large" @click="createApp" :loading="creating">
             <template #icon>
               <span>↑</span>
@@ -470,8 +495,36 @@ onMounted(() => {
   bottom: 12px;
   right: 12px;
   display: flex;
-  gap: 8px;
+  gap: 12px;
   align-items: center;
+}
+
+.agent-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  transition: all 0.3s;
+  cursor: help;
+  position: relative;
+}
+
+.agent-switch:hover {
+  background: rgba(255, 255, 255, 1);
+  border-color: rgba(59, 130, 246, 0.4);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
+  transform: translateY(-1px);
+}
+
+.agent-label {
+  font-size: 14px;
+  color: #475569;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 /* 快捷按钮 */

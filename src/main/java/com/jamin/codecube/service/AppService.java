@@ -1,6 +1,5 @@
 package com.jamin.codecube.service;
 
-import com.jamin.codecube.common.BaseResponse;
 import com.jamin.codecube.common.DeleteRequest;
 import com.jamin.codecube.model.dto.app.AppAddRequest;
 import com.jamin.codecube.model.dto.app.AppQueryRequest;
@@ -9,7 +8,6 @@ import com.jamin.codecube.model.entity.User;
 import com.jamin.codecube.model.vo.AppVO;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
-import jakarta.servlet.http.HttpServletRequest;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
@@ -48,9 +46,10 @@ public interface AppService extends IService<App> {
      * @param appId
      * @param message
      * @param loginUser
+     * @param agent
      * @return
      */
-    Flux<String> chatToGenCode(Long appId, String message, User loginUser);
+    Flux<String> chatToGenCode(Long appId, String message, User loginUser, boolean agent);
 
     /**
      * 部署应用

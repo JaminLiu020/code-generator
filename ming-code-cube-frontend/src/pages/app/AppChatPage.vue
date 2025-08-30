@@ -7,6 +7,13 @@
         <a-tag v-if="appInfo?.codeGenType" color="blue" class="code-gen-type-tag">
           {{ formatCodeGenType(appInfo.codeGenType) }}
         </a-tag>
+        <!-- 工作流状态显示 -->
+        <a-tag :color="agentEnabled ? 'green' : 'default'" class="agent-status-tag">
+          <template #icon>
+            <span>⚙️</span>
+          </template>
+          工作流: {{ agentEnabled ? '开启' : '关闭' }}
+        </a-tag>
       </div>
       <div class="header-right">
         <a-button type="default" @click="showAppDetail">
@@ -214,6 +221,7 @@ import { ref, onMounted, nextTick, onUnmounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { useLoginUserStore } from '@/stores/loginUser'
+import { useAgentStore } from '@/stores/agent'
 import {
   getAppVoById,
   deployApp as deployAppApi,
@@ -242,10 +250,14 @@ import {
 const route = useRoute()
 const router = useRouter()
 const loginUserStore = useLoginUserStore()
+const agentStore = useAgentStore()
 
 // 应用信息
 const appInfo = ref<API.AppVO>()
 const appId = ref<any>()
+
+// Agent状态 - 在进入对话页面时固定，从URL参数获取
+const agentEnabled = ref<boolean>(false)
 
 // 对话相关
 interface Message {
@@ -288,8 +300,9 @@ const visualEditor = new VisualEditor({
 })
 
 // 权限相关
+// 计算属性
 const isOwner = computed(() => {
-  return appInfo.value?.userId === loginUserStore.loginUser.id
+  return appInfo.value?.userid === loginUserStore.loginUser.id
 })
 
 const isAdmin = computed(() => {
@@ -488,6 +501,7 @@ const generateCode = async (userMessage: string, aiMessageIndex: number) => {
     const params = new URLSearchParams({
       appId: appId.value || '',
       message: userMessage,
+      agent: agentEnabled.value ? 'true' : 'false',
     })
 
     const url = `${baseURL}/app/chat/gen/code?${params}`
@@ -656,7 +670,7 @@ const deployApp = async () => {
   deploying.value = true
   try {
     const res = await deployAppApi({
-      appId: appId.value as unknown as number,
+      appid: appId.value as unknown as number,
     })
 
     if (res.data.code === 0 && res.data.data) {
@@ -755,6 +769,14 @@ const getInputPlaceholder = () => {
 
 // 页面加载时获取应用信息
 onMounted(() => {
+  // 从URL参数获取agent状态
+  const agentParam = route.query.agent as string
+  if (agentParam === 'true') {
+    agentEnabled.value = true
+  } else if (agentParam === 'false') {
+    agentEnabled.value = false
+  }
+  
   fetchAppInfo()
 
   // 监听 iframe 消息
@@ -794,6 +816,11 @@ onUnmounted(() => {
 
 .code-gen-type-tag {
   font-size: 12px;
+}
+
+.agent-status-tag {
+  font-size: 12px;
+  margin-left: 8px;
 }
 
 .app-name {
