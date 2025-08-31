@@ -11,7 +11,7 @@ declare namespace API {
   }
 
   type AppDeployRequest = {
-    appid?: number
+    appId?: number
   }
 
   type AppQueryRequest = {
@@ -26,7 +26,7 @@ declare namespace API {
     codeGenType?: string
     deployKey?: string
     priority?: number
-    userid?: number
+    userId?: number
   }
 
   type AppUpdateRequest = {
@@ -43,7 +43,7 @@ declare namespace API {
     deployKey?: string
     deployedTime?: string
     priority?: number
-    userid?: number
+    userId?: number
     createTime?: string
     updateTime?: string
     user?: UserVO
@@ -113,8 +113,8 @@ declare namespace API {
     id?: number
     message?: string
     messageType?: string
-    appid?: number
-    userid?: number
+    appId?: number
+    userId?: number
     createTime?: string
     updateTime?: string
     isDelete?: number
@@ -128,8 +128,8 @@ declare namespace API {
     id?: number
     message?: string
     messageType?: string
-    appid?: number
-    userid?: number
+    appId?: number
+    userId?: number
     lastCreateTime?: string
   }
 

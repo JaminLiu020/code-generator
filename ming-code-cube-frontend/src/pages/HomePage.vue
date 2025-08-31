@@ -62,8 +62,10 @@ const createApp = async () => {
       message.success('应用创建成功')
       // 跳转到对话页面，确保ID是字符串类型，并传递agent状态
       const appId = String(res.data.data)
-      const agentParam = agentStore.isAgentEnabled ? '?agent=true' : '?agent=false'
-      await router.push(`/app/chat/${appId}${agentParam}`)
+      await router.push({
+        path: `/app/chat/${appId}`,
+        query: { agent: agentStore.isAgentEnabled ? 'true' : 'false' }
+      })
     } else {
       message.error('创建失败：' + res.data.message)
     }

@@ -302,7 +302,7 @@ const visualEditor = new VisualEditor({
 // 权限相关
 // 计算属性
 const isOwner = computed(() => {
-  return appInfo.value?.userid === loginUserStore.loginUser.id
+  return appInfo.value?.userId === loginUserStore.loginUser.id
 })
 
 const isAdmin = computed(() => {
@@ -670,7 +670,7 @@ const deployApp = async () => {
   deploying.value = true
   try {
     const res = await deployAppApi({
-      appid: appId.value as unknown as number,
+      appId: appId.value as unknown as number,
     })
 
     if (res.data.code === 0 && res.data.data) {
