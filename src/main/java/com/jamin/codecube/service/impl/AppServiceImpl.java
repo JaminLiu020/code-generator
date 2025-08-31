@@ -6,6 +6,7 @@ import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 import com.jamin.codecube.ai.AiCodeGenTypeRoutingService;
+import com.jamin.codecube.ai.AiCodeGenTypeRoutingServiceFactory;
 import com.jamin.codecube.common.DeleteRequest;
 import com.jamin.codecube.constant.AppConstant;
 import com.jamin.codecube.constant.UserConstant;
@@ -64,7 +65,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
     @Autowired
     private ScreenshotService screenshotService;
     @Autowired
-    private AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService;
+    private AiCodeGenTypeRoutingServiceFactory aiCodeGenTypeRoutingServiceFactory;
 
     /**
      * 获取应用的视图对象。
@@ -353,8 +354,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         app.setUserId(loginUser.getId());
         // 应用名称暂时为 initPrompt 前 12 位
         app.setAppName(initPrompt.substring(0, Math.min(initPrompt.length(), 12)));
-        // 暂时设置为多文件生成
-        CodeGenTypeEnum codeGenTypeEnum = aiCodeGenTypeRoutingService.routeCodeGenType(initPrompt);
+        // 使用 AI 智能选择代码生成类型（多例模式）
+        AiCodeGenTypeRoutingService routingService = aiCodeGenTypeRoutingServiceFactory.createAiCodeGenTypeRoutingService();
+        CodeGenTypeEnum codeGenTypeEnum = routingService.routeCodeGenType(initPrompt);
         app.setCodeGenType(codeGenTypeEnum.getValue());
         // 插入数据库
         boolean result = this.save(app);

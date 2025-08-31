@@ -7,6 +7,7 @@ import com.jamin.codecube.exception.BusinessException;
 import com.jamin.codecube.exception.ErrorCode;
 import com.jamin.codecube.model.enums.CodeGenTypeEnum;
 import com.jamin.codecube.service.ChatHistoryService;
+import com.jamin.codecube.utils.SpringContextUtil;
 import dev.langchain4j.community.store.memory.chat.redis.RedisChatMemoryStore;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
@@ -30,12 +31,8 @@ import java.time.Duration;
 public class AiCodeGeneratorServiceFactory {
 
     @Autowired
+    @Qualifier("openAiChatModel")
     private ChatModel chatModel;
-    @Autowired
-    private StreamingChatModel openAiStreamingChatModel;
-    @Autowired
-    @Qualifier("reasoningStreamingChatModel")
-    private StreamingChatModel reasoningStreamingChatModel;
     @Autowired
     private RedisChatMemoryStore redisChatMemoryStore;
     @Autowired
@@ -109,6 +106,8 @@ public class AiCodeGeneratorServiceFactory {
         switch (codeGenType) {
             // 对于 HTML 和多文件代码生成，使用通用的 AiCodeGeneratorService
             case HTML, MULTI_FILE:{
+                // 使用多例模式的StreamChatModel，确保每次调用都是新的实例，解决并发问题
+                StreamingChatModel openAiStreamingChatModel = SpringContextUtil.getBean("streamingChatModelPrototype", StreamingChatModel.class);
                 return AiServices.builder(AiCodeGeneratorService.class)
                         .chatModel(chatModel)
                         .streamingChatModel(openAiStreamingChatModel)
@@ -117,6 +116,8 @@ public class AiCodeGeneratorServiceFactory {
             }
             // 对于 Vue 项目代码生成，使用推理模型和工具调用
             case VUE_PROJECT:{
+                // 使用多例模式的 StreamingChatModel 解决并发问题
+                StreamingChatModel reasoningStreamingChatModel = SpringContextUtil.getBean("reasoningStreamingChatModelPrototype", StreamingChatModel.class);
                 return AiServices.builder(AiCodeGeneratorService.class)
                         .streamingChatModel(reasoningStreamingChatModel)
                         .chatMemoryProvider(memoryId -> chatMemory)
