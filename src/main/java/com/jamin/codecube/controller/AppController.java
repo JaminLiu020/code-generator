@@ -13,6 +13,8 @@ import com.jamin.codecube.model.entity.App;
 import com.jamin.codecube.model.entity.User;
 import com.jamin.codecube.model.enums.CodeGenTypeEnum;
 import com.jamin.codecube.model.vo.AppVO;
+import com.jamin.codecube.ratelimiter.annotation.RateLimit;
+import com.jamin.codecube.ratelimiter.enums.RateLimitType;
 import com.jamin.codecube.service.AppService;
 import com.jamin.codecube.service.ProjectDownloadService;
 import com.jamin.codecube.service.UserService;
@@ -288,6 +290,7 @@ public class AppController {
      * @return
      */
     @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @RateLimit(limitType = RateLimitType.USER, rate = 5, rateInterval = 60, message = "AI 对话请求过于频繁，请稍后再试")
     public Flux<ServerSentEvent<String>> chatToGenCode(
             @RequestParam("appId") Long appId,
             @RequestParam("message") String message,
