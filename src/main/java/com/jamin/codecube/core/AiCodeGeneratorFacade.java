@@ -8,6 +8,8 @@ import com.jamin.codecube.ai.model.MultiFileCodeResult;
 import com.jamin.codecube.ai.model.message.AiResponseMessage;
 import com.jamin.codecube.ai.model.message.ToolExecutedMessage;
 import com.jamin.codecube.ai.model.message.ToolRequestMessage;
+import com.jamin.codecube.constant.AppConstant;
+import com.jamin.codecube.core.builder.VueProjectBuilder;
 import com.jamin.codecube.core.parse.CodeParserExecutor;
 import com.jamin.codecube.core.saver.CodeFileSaverExecutor;
 import com.jamin.codecube.model.enums.CodeGenTypeEnum;
@@ -32,7 +34,8 @@ public class AiCodeGeneratorFacade {
 
     @Autowired
     private AiCodeGeneratorServiceFactory aiCodeGeneratorServiceFactory;
-
+    @Autowired
+    private VueProjectBuilder vueProjectBuilder;
 
     /**
      * 生成并保存代码文件
@@ -108,7 +111,7 @@ public class AiCodeGeneratorFacade {
                 return proccessCodeStream(codeStream, CodeGenTypeEnum.MULTI_FILE, appId);
             case VUE_PROJECT:
                 TokenStream tokenStream = aiCodeGeneratorService.generateVueProjectCodeStream(appId, userMessage);
-                return proccessTokenStream(tokenStream);
+                return proccessTokenStream(tokenStream, appId);
             default:
                 String errorMsg = "Unsupported code generation type: " + codeGenTypeEnum;
                 throw new BusinessException(ErrorCode.SYSTEM_ERROR, errorMsg);
@@ -120,7 +123,7 @@ public class AiCodeGeneratorFacade {
      * @param tokenStream
      * @return
      */
-    private Flux<String> proccessTokenStream(TokenStream tokenStream) {
+    private Flux<String> proccessTokenStream(TokenStream tokenStream, Long appId) {
         //  将 TokenStream 转换为 Flux<String>
         return Flux.create(sink -> {
             tokenStream.onPartialResponse((String partialResponse) -> {
@@ -138,6 +141,9 @@ public class AiCodeGeneratorFacade {
                         sink.next(JSONUtil.toJsonStr(toolExecutedMessage));
                     })
                     .onCompleteResponse((ChatResponse response) -> {
+                        // 异步构造 Vue 项目
+                        String projectDir = AppConstant.CODE_OUTPUT_ROOT_DIR + "/vue_project_" + appId;
+                        vueProjectBuilder.buildProject(projectDir);
                         sink.complete();
                     })
                     .onError((Throwable error) -> {
