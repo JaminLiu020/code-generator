@@ -1,5 +1,6 @@
 package com.jamin.codecube.ai;
 
+import com.jamin.codecube.ai.guardrail.RetryOutputGuardrail;
 import com.jamin.codecube.utils.SpringContextUtil;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.service.AiServices;
@@ -19,6 +20,7 @@ public class AiCodeGenTypeRoutingServiceFactory {
         ChatModel routingChatModel = SpringContextUtil.getBean("routingChatModelPrototype", ChatModel.class);
         return AiServices.builder(AiCodeGenTypeRoutingService.class)
                 .chatModel(routingChatModel)
+                .outputGuardrails(new RetryOutputGuardrail())
                 .build();
     }
 

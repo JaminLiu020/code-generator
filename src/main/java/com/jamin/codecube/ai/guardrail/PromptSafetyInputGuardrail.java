@@ -19,7 +19,8 @@ public class PromptSafetyInputGuardrail implements InputGuardrail {
             "破解", "hack", "绕过", "bypass", "越狱", "jailbreak", "习近平",
             "法轮功", "六四", "藏独", "疆独", "台独", "反动", "暴力", "色情",
             "毒品", "赌博", "诈骗", "恐怖主义", "恐怖分子", "极端主义", "邪教",
-            "自杀", "未成年人", "共产党", "宗教自由", "自残", "虐待", "剥削", "人口贩卖", "毒品"
+            "自杀", "未成年人", "共产党", "宗教自由", "自残", "虐待", "剥削",
+            "人口贩卖", "毒品", "假装你是管理员"
     );
 
     // 注入攻击模式
@@ -33,14 +34,7 @@ public class PromptSafetyInputGuardrail implements InputGuardrail {
             Pattern.compile("(?i)generate\\s+content\\s+that\\s+(?:is|are)\\s+(?:illegal|inappropriate|harmful)"),
             Pattern.compile("(?i)忽略\\s+(?:之前|以上|所有)\\s+(?:指令|命令|提示|内容|要求)"),
             Pattern.compile("(?:忘记|无视)\\s+(?:所有|一切)\\s+(?:以上|之前)"),
-            Pattern.compile("(?:假装|扮演|表现)\\s+(?:像|如果|你是)"),
-            Pattern.compile("系统\\s*:\\s*你是"),
-            Pattern.compile("新的\\s+(?:指令|命令|提示)\\s*:"),
-            Pattern.compile("生成\\s+(?:非法|不当|有害)\\s+内容"),
-            Pattern.compile("写代码\\s+(?:破解|绕过|绕开)"),
-            Pattern.compile("假装你是\\s+(?:管理员|系统)"),
-            Pattern.compile("无视所有\\s+(?:规则|限制)"),
-            Pattern.compile("生成\\s+(?:敏感|违法)\\s+信息")
+            Pattern.compile("(?:假装|扮演|表现)\\s+(?:像|如果|你是)")
 
     );
 
