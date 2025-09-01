@@ -2,6 +2,7 @@ package com.jamin.codecube.ai;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
+import com.jamin.codecube.ai.guardrail.PromptSafetyInputGuardrail;
 import com.jamin.codecube.ai.tools.*;
 import com.jamin.codecube.exception.BusinessException;
 import com.jamin.codecube.exception.ErrorCode;
@@ -112,6 +113,7 @@ public class AiCodeGeneratorServiceFactory {
                         .chatModel(chatModel)
                         .streamingChatModel(openAiStreamingChatModel)
                         .chatMemory(chatMemory)
+                        .inputGuardrails(new PromptSafetyInputGuardrail())
                         .build();
             }
             // 对于 Vue 项目代码生成，使用推理模型和工具调用
@@ -125,6 +127,7 @@ public class AiCodeGeneratorServiceFactory {
                         .hallucinatedToolNameStrategy(toolExecutionRequest ->
                             ToolExecutionResultMessage.from(toolExecutionRequest,
                                     "there is no tool called " + toolExecutionRequest.name()))
+                        .inputGuardrails(new PromptSafetyInputGuardrail())
                         .build();
             }
             default:
