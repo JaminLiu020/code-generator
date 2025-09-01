@@ -128,6 +128,7 @@ public class AiCodeGeneratorServiceFactory {
                             ToolExecutionResultMessage.from(toolExecutionRequest,
                                     "there is no tool called " + toolExecutionRequest.name()))
                         .inputGuardrails(new PromptSafetyInputGuardrail())
+                        .maxSequentialToolsInvocations(30)
                         .build();
             }
             default:
