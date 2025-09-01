@@ -13,7 +13,7 @@ import com.jamin.codecube.constant.UserConstant;
 import com.jamin.codecube.core.AiCodeGeneratorFacade;
 import com.jamin.codecube.core.builder.VueProjectBuilder;
 import com.jamin.codecube.core.handler.StreamHandlerExecutor;
-import com.jamin.codecube.langgraph4j.CodeGenWorkflow;
+import com.jamin.codecube.langgraph4j.service.CodeGenWorkflowService;
 import com.jamin.codecube.mapper.AppMapper;
 import com.jamin.codecube.model.dto.app.AppAddRequest;
 import com.jamin.codecube.model.dto.app.AppQueryRequest;
@@ -33,6 +33,8 @@ import com.jamin.codecube.exception.BusinessException;
 import com.jamin.codecube.exception.ErrorCode;
 import com.jamin.codecube.exception.ThrowUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.bsc.langgraph4j.CompiledGraph;
+import org.bsc.langgraph4j.prebuilt.MessagesState;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
@@ -66,6 +68,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
     private ScreenshotService screenshotService;
     @Autowired
     private AiCodeGenTypeRoutingServiceFactory aiCodeGenTypeRoutingServiceFactory;
+    @Autowired
+    private CodeGenWorkflowService codeGenWorkflowService;
 
     /**
      * 获取应用的视图对象。
@@ -173,7 +177,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         Flux<String> codeStream;
         if (agent) {
             // Agent 模式：使用工作流生成代码
-            codeStream = new CodeGenWorkflow().executeWorkflowWithFlux(message, appId);
+            codeStream = codeGenWorkflowService.executeWorkflowWithFlux(message, appId);
         } else {
             // 传统模式：调用 AI 生成代码（流式）
             codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);

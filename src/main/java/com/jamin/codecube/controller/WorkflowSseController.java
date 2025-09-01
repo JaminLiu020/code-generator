@@ -1,6 +1,6 @@
 package com.jamin.codecube.controller;
 
-import com.jamin.codecube.langgraph4j.CodeGenWorkflow;
+import com.jamin.codecube.langgraph4j.service.CodeGenWorkflowService;
 import com.jamin.codecube.langgraph4j.state.WorkflowContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -23,7 +23,7 @@ public class WorkflowSseController {
     @PostMapping("/execute")
     public WorkflowContext executeWorkflow(@RequestParam String prompt) {
         log.info("收到同步工作流执行请求: {}", prompt);
-        return new CodeGenWorkflow().executeWorkflow(prompt);
+        return new CodeGenWorkflowService().executeWorkflow(prompt);
     }
 
     /**
@@ -32,7 +32,7 @@ public class WorkflowSseController {
     @GetMapping(value = "/execute-flux", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> executeWorkflowWithFlux(@RequestParam String prompt) {
         log.info("收到 Flux 工作流执行请求: {}", prompt);
-        return new CodeGenWorkflow().executeWorkflowWithFlux(prompt);
+        return new CodeGenWorkflowService().executeWorkflowWithFlux(prompt);
     }
 
     /**
@@ -41,7 +41,7 @@ public class WorkflowSseController {
     @GetMapping(value = "/execute-sse", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter executeWorkflowWithSse(@RequestParam String prompt) {
         log.info("收到 SSE 工作流执行请求: {}", prompt);
-        return new CodeGenWorkflow().executeWorkflowWithSse(prompt);
+        return new CodeGenWorkflowService().executeWorkflowWithSse(prompt);
     }
 
 }
