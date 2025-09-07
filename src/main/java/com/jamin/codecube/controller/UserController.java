@@ -177,7 +177,7 @@ public class UserController {
      * @param userRegisterRequest
      * @return
      */
-    @PostMapping("register")
+    @PostMapping("/register")
     public BaseResponse<Long> userRegister(@RequestBody UserRegisterRequest userRegisterRequest) {
         ThrowUtils.throwIf(userRegisterRequest == null, ErrorCode.PARAMS_ERROR);
         String userAccount = userRegisterRequest.getUserAccount();
@@ -193,7 +193,7 @@ public class UserController {
      * @param request
      * @return
      */
-    @PostMapping("login")
+    @PostMapping("/login")
     public BaseResponse<LoginUserVO> userLogin(@RequestBody UserRegisterRequest userRegisterRequest, HttpServletRequest request) {
         ThrowUtils.throwIf(userRegisterRequest == null, ErrorCode.PARAMS_ERROR);
         String userAccount = userRegisterRequest.getUserAccount();
@@ -207,7 +207,7 @@ public class UserController {
      * @param request
      * @return
      */
-    @GetMapping("get/login")
+    @GetMapping("/get/login")
     public BaseResponse<LoginUserVO> getLoginUser(HttpServletRequest request) {
         LoginUserVO loginUserVO = userService.getLoginUserVO(userService.getLoginUser(request));
         return ResultUtils.success(loginUserVO);
@@ -218,7 +218,7 @@ public class UserController {
      * @param request
      * @return
      */
-    @PostMapping("logout")
+    @PostMapping("/logout")
     public BaseResponse<Boolean> userLogout(HttpServletRequest request) {
         if(request==null){
             throw new BusinessException(ErrorCode.PARAMS_ERROR);

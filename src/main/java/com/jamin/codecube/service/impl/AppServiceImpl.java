@@ -33,9 +33,8 @@ import com.jamin.codecube.exception.BusinessException;
 import com.jamin.codecube.exception.ErrorCode;
 import com.jamin.codecube.exception.ThrowUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.bsc.langgraph4j.CompiledGraph;
-import org.bsc.langgraph4j.prebuilt.MessagesState;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
@@ -70,6 +69,9 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
     private AiCodeGenTypeRoutingServiceFactory aiCodeGenTypeRoutingServiceFactory;
     @Autowired
     private CodeGenWorkflowService codeGenWorkflowService;
+    @Value("${code.deploy-host:http://localhost}")
+    private String deployHost;
+
 
     /**
      * 获取应用的视图对象。
@@ -249,7 +251,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         boolean updateResult = updateById(updateApp);
         ThrowUtils.throwIf(!updateResult, ErrorCode.SYSTEM_ERROR, "部署失败，无法更新应用信息");
         // 10. 构建应用访问 URL
-        String appDeployUrl = String.format("%s/%s/", AppConstant.CODE_DEPLOY_HOST, deployKey);
+        String appDeployUrl = String.format("%s/%s/", deployHost, deployKey);
         // 11. 异步生成截图并更新应用封面
         generateAppScreenshotAsync(appId, appDeployUrl);
         return appDeployUrl;

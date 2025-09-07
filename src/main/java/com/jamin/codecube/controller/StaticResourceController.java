@@ -15,6 +15,9 @@ import org.springframework.web.servlet.HandlerMapping;
 
 import java.io.File;
 
+/**
+ * 静态资源控制器，提供对生成代码等静态资源的访问
+ */
 @RestController
 @RequestMapping("/static")
 public class StaticResourceController {
