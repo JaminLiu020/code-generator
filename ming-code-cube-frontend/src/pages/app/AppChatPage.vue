@@ -8,7 +8,11 @@
           {{ formatCodeGenType(appInfo.codeGenType) }}
         </a-tag>
         <!-- 工作流状态显示 -->
-        <a-tag :color="agentEnabled ? 'green' : 'default'" class="agent-status-tag">
+        <a-tag 
+          v-if="ENABLE_WORKFLOW"
+          :color="agentEnabled ? 'green' : 'default'" 
+          class="agent-status-tag"
+        >
           <template #icon>
             <span>⚙️</span>
           </template>
@@ -251,6 +255,9 @@ const route = useRoute()
 const router = useRouter()
 const loginUserStore = useLoginUserStore()
 const agentStore = useAgentStore()
+
+// 工作流功能开关 - 设置为 false 可隐藏工作流相关功能
+const ENABLE_WORKFLOW = false
 
 // 应用信息
 const appInfo = ref<API.AppVO>()

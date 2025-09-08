@@ -6,7 +6,7 @@
         <RouterLink to="/">
           <div class="header-left">
             <img class="logo" src="@/assets/logo.png" alt="Logo" />
-            <h1 class="site-title">小明应用生成</h1>
+            <h1 class="site-title">AI 应用万花筒</h1>
           </div>
         </RouterLink>
       </a-col>
@@ -144,8 +144,8 @@ const doLogout = async () => {
 }
 
 .logo {
-  height: 48px;
-  width: 48px;
+  height: 60px;
+  width: 60px;
 }
 
 .site-title {

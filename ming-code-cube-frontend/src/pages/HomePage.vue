@@ -12,6 +12,26 @@ const router = useRouter()
 const loginUserStore = useLoginUserStore()
 const agentStore = useAgentStore()
 
+// 工作流功能开关 - 设置为 false 可隐藏工作流相关功能
+const ENABLE_WORKFLOW = false
+
+// 随机提示词列表
+const placeholderTexts = [
+  '帮我创建个人博客网站',
+  '制作一个企业官网',
+  '构建一个在线商城系统',
+  '设计一个作品展示网站',
+  '开发一个新闻资讯平台',
+  '创建一个在线教育网站',
+  '建立一个社区论坛系统',
+  '设计一个餐厅官网',
+  '制作一个旅游网站',
+  '开发一个在线预约系统'
+]
+
+// 当前显示的提示词
+const currentPlaceholder = ref('')
+
 // 用户提示词
 const userPrompt = ref('')
 const creating = ref(false)
@@ -60,12 +80,21 @@ const createApp = async () => {
 
     if (res.data.code === 0 && res.data.data) {
       message.success('应用创建成功')
-      // 跳转到对话页面，确保ID是字符串类型，并传递agent状态
+      // 跳转到对话页面，确保ID是字符串类型
       const appId = String(res.data.data)
-      await router.push({
-        path: `/app/chat/${appId}`,
-        query: { agent: agentStore.isAgentEnabled ? 'true' : 'false' }
-      })
+      if (ENABLE_WORKFLOW) {
+        // 工作流功能启用时，传递agent状态
+        await router.push({
+          path: `/app/chat/${appId}`,
+          query: { agent: agentStore.isAgentEnabled ? 'true' : 'false' }
+        })
+      } else {
+        // 工作流功能禁用时，默认传递false
+        await router.push({
+          path: `/app/chat/${appId}`,
+          query: { agent: 'false' }
+        })
+      }
     } else {
       message.error('创建失败：' + res.data.message)
     }
@@ -134,12 +163,63 @@ const viewWork = (app: API.AppVO) => {
   }
 }
 
+// 随机选择提示词
+const getRandomPlaceholder = () => {
+  const randomIndex = Math.floor(Math.random() * placeholderTexts.length)
+  return placeholderTexts[randomIndex]
+}
+
+// 刷新提示词
+const refreshPlaceholder = () => {
+  currentPlaceholder.value = getRandomPlaceholder()
+}
+
+// 填充提示词到输入框
+const fillPromptToInput = () => {
+  if (currentPlaceholder.value) {
+    userPrompt.value = currentPlaceholder.value
+  }
+}
+
+// 刷新并填充提示词（用于刷新按钮）
+const refreshAndFillPrompt = () => {
+  refreshPlaceholder()
+  fillPromptToInput()
+}
+
+// 处理键盘事件
+const handleKeyDown = (event: KeyboardEvent) => {
+  // Tab键：填充当前提示词
+  if (event.key === 'Tab') {
+    event.preventDefault()
+    if (!userPrompt.value.trim()) {
+      fillPromptToInput()
+    }
+    return
+  }
+  
+  // Enter键发送，Shift+Enter换行
+  if (event.key === 'Enter') {
+    if (event.shiftKey) {
+      // Shift+Enter：允许换行，不阻止默认行为
+      return
+    } else {
+      // 单独Enter：发送消息
+      event.preventDefault()
+      createApp()
+    }
+  }
+}
+
 // 格式化时间函数已移除，不再需要显示创建时间
 
 // 页面加载时获取数据
 onMounted(() => {
   // 每次进入首页时重置工作流状态为关闭
   agentStore.resetAgentState()
+  
+  // 初始化随机提示词
+  refreshPlaceholder()
   
   loadMyApps()
   loadFeaturedApps()
@@ -169,7 +249,7 @@ onMounted(() => {
     <div class="container">
       <!-- 网站标题和描述 -->
       <div class="hero-section">
-        <h1 class="hero-title">AI 应用生成平台</h1>
+        <h1 class="hero-title">AI 应用万花筒</h1>
         <p class="hero-description">一句话轻松创建网站应用</p>
       </div>
 
@@ -177,16 +257,30 @@ onMounted(() => {
       <div class="input-section">
         <a-textarea
           v-model:value="userPrompt"
-          placeholder="帮我创建个人博客网站"
+          :placeholder="`${currentPlaceholder}（按 Tab 键自动填充，Enter 发送，Shift+Enter 换行）`"
           :rows="4"
           :maxlength="1000"
           class="prompt-input"
+          @keydown="handleKeyDown"
         />
         
         <!-- Agent开关和发送按钮 -->
         <div class="input-actions">
+          <!-- 刷新提示词按钮 -->
+          <a-tooltip title="随机填充提示词" placement="top">
+            <a-button 
+              type="text" 
+              size="small"
+              @click="refreshAndFillPrompt"
+              class="refresh-button"
+            >
+              🔄
+            </a-button>
+          </a-tooltip>
+          
           <!-- 工作流开关 -->
           <a-tooltip 
+            v-if="ENABLE_WORKFLOW"
             title="此功能尚未开发完善，仅供体验😊" 
             :mouse-enter-delay="0"
             placement="top"
@@ -497,8 +591,28 @@ onMounted(() => {
   bottom: 12px;
   right: 12px;
   display: flex;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
+}
+
+.refresh-button {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 20px;
+  transition: all 0.3s;
+  font-size: 14px;
+  height: 32px;
+  width: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.refresh-button:hover {
+  background: rgba(255, 255, 255, 1);
+  border-color: rgba(59, 130, 246, 0.4);
+  transform: rotate(180deg);
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.1);
 }
 
 .agent-switch {
