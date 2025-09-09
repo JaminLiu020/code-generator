@@ -17,16 +17,16 @@ const ENABLE_WORKFLOW = false
 
 // 随机提示词列表
 const placeholderTexts = [
-  '帮我创建个人博客网站',
-  '制作一个企业官网',
-  '构建一个在线商城系统',
-  '设计一个作品展示网站',
-  '开发一个新闻资讯平台',
-  '创建一个在线教育网站',
-  '建立一个社区论坛系统',
-  '设计一个餐厅官网',
-  '制作一个旅游网站',
-  '开发一个在线预约系统'
+  '帮我创建一个个人博客网站Demo',
+  '制作一个企业官网Demo',
+  '构建一个在线商城系统Demo',
+  '设计一个作品展示网站Demo',
+  '开发一个新闻资讯平台Demo',
+  '创建一个在线教育网站Demo',
+  '建立一个社区论坛系统Demo',
+  '设计一个餐厅官网Demo',
+  '制作一个旅游网站Demo',
+  '开发一个在线预约系统Demo'
 ]
 
 // 当前显示的提示词
@@ -197,7 +197,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
     }
     return
   }
-  
+
   // Enter键发送，Shift+Enter换行
   if (event.key === 'Enter') {
     if (event.shiftKey) {
@@ -217,10 +217,10 @@ const handleKeyDown = (event: KeyboardEvent) => {
 onMounted(() => {
   // 每次进入首页时重置工作流状态为关闭
   agentStore.resetAgentState()
-  
+
   // 初始化随机提示词
   refreshPlaceholder()
-  
+
   loadMyApps()
   loadFeaturedApps()
 
@@ -263,13 +263,13 @@ onMounted(() => {
           class="prompt-input"
           @keydown="handleKeyDown"
         />
-        
+
         <!-- Agent开关和发送按钮 -->
         <div class="input-actions">
           <!-- 刷新提示词按钮 -->
           <a-tooltip title="随机填充提示词" placement="top">
-            <a-button 
-              type="text" 
+            <a-button
+              type="text"
               size="small"
               @click="refreshAndFillPrompt"
               class="refresh-button"
@@ -277,11 +277,11 @@ onMounted(() => {
               🔄
             </a-button>
           </a-tooltip>
-          
+
           <!-- 工作流开关 -->
-          <a-tooltip 
+          <a-tooltip
             v-if="ENABLE_WORKFLOW"
-            title="此功能尚未开发完善，仅供体验😊" 
+            title="此功能尚未开发完善，仅供体验😊"
             :mouse-enter-delay="0"
             placement="top"
           >
@@ -295,7 +295,7 @@ onMounted(() => {
               />
             </div>
           </a-tooltip>
-          
+
           <a-button type="primary" size="large" @click="createApp" :loading="creating">
             <template #icon>
               <span>↑</span>

@@ -349,6 +349,13 @@ const showAppDetail = () => {
 // 加载对话历史
 const loadChatHistory = async (isLoadMore = false) => {
   if (!appId.value || loadingHistory.value) return
+  
+  // 如果正在生成代码，避免覆盖当前对话
+  if (isGenerating.value && !isLoadMore) {
+    console.warn('正在生成代码，跳过历史消息加载以避免覆盖当前对话')
+    return
+  }
+  
   loadingHistory.value = true
   try {
     const params: API.listAppChatHistoryParams = {
@@ -630,8 +637,8 @@ const generateCode = async (userMessage: string, aiMessageIndex: number) => {
         isGenerating.value = false
         eventSource?.close()
 
+        // 只更新预览，不重新加载对话历史，避免覆盖当前正在生成的消息
         setTimeout(async () => {
-          await fetchAppInfo()
           updatePreview(true) // 强制刷新以显示最新修改
         }, 1000)
       } else {
