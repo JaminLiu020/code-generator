@@ -34,6 +34,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -57,6 +58,8 @@ public class AppController {
     private UserService userService;
     @Autowired
     private ProjectDownloadService projectDownloadService;
+    @Autowired
+    private com.jamin.codecube.service.BuildStatusService buildStatusService;
 
     /**
      * 创建应用
@@ -371,6 +374,33 @@ public class AppController {
         String downloadFileName = String.valueOf(appId);
         // 7. 调用通用下载服务
         projectDownloadService.downloadProjectAsZip(sourceDirPath, downloadFileName, response);
+    }
+
+    /**
+     * 创建构建状态SSE连接
+     * 用于实时推送Vue项目构建状态
+     * 
+     * @param appId 应用ID
+     * @param request HTTP请求
+     * @return SSE发射器
+     */
+    @GetMapping(value = "/build-status/{appId}", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter createBuildStatusEmitter(
+            @PathVariable("appId") Long appId,
+            HttpServletRequest request) {
+        // 获取当前登录用户
+        User loginUser = userService.getLoginUser(request);
+        
+        // 检查应用权限
+        App app = appService.getById(appId);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR);
+        
+        // 只有应用所有者可以监听构建状态
+        if (!app.getUserId().equals(loginUser.getId())) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "只有应用所有者可以监听构建状态");
+        }
+        
+        return buildStatusService.createBuildStatusEmitter(appId);
     }
 
 

@@ -159,7 +159,13 @@
       <!-- 右侧网页展示区域 -->
       <div class="preview-section">
         <div class="preview-header">
-          <h3>生成后的网页展示</h3>
+          <div class="preview-title">
+            <h3>生成后的网页展示</h3>
+            <div v-if="vueProjectBuilding" class="building-indicator">
+              <a-spin size="small" />
+              <span class="building-text">构建中...</span>
+            </div>
+          </div>
           <div class="preview-actions">
             <a-button
                 v-if="isOwner && previewUrl"
@@ -183,13 +189,23 @@
           </div>
         </div>
         <div class="preview-content">
-          <div v-if="!previewUrl && !isGenerating" class="preview-placeholder">
+          <div v-if="buildFailure" class="preview-error">
+            <div class="error-icon">❌</div>
+            <h3>Vue项目构建失败</h3>
+            <p class="error-message">{{ buildFailureMessage }}</p>
+            <p class="error-tip">请检查代码是否正确，或重新生成项目</p>
+          </div>
+          <div v-else-if="!previewUrl && !isGenerating && !vueProjectBuilding" class="preview-placeholder">
             <div class="placeholder-icon">🌐</div>
             <p>网站文件生成完成后将在这里展示</p>
           </div>
           <div v-else-if="isGenerating" class="preview-loading">
             <a-spin size="large" />
             <p>正在生成网站...</p>
+          </div>
+          <div v-else-if="vueProjectBuilding" class="preview-loading">
+            <a-spin size="large" />
+            <p>Vue项目正在构建中，请稍候...</p>
           </div>
           <iframe
               v-else
@@ -288,6 +304,12 @@ const historyLoaded = ref(false)
 // 预览相关
 const previewUrl = ref('')
 const previewReady = ref(false)
+const vueProjectBuilding = ref(false)
+const buildStatusEmitter = ref<EventSource | null>(null)
+const buildFailure = ref(false)
+const buildFailureMessage = ref('')
+const buildTimeoutTimer = ref<number | null>(null)
+const buildCompleted = ref(false)
 
 // 部署相关
 const deploying = ref(false)
@@ -400,6 +422,12 @@ const fetchAppInfo = async () => {
       if (messages.value.length >= 2) {
         updatePreview()
       }
+      
+      // 如果是Vue项目，创建构建状态监听连接
+      if (appInfo.value.codeGenType === CodeGenTypeEnum.VUE_PROJECT) {
+        createBuildStatusListener()
+      }
+      
       // 检查是否需要自动发送初始提示词
       // 只有在是自己的应用且没有对话历史时才自动发送
       if (
@@ -450,6 +478,14 @@ const sendMessage = async () => {
   if (!userInput.value.trim() || isGenerating.value) {
     return
   }
+
+  // 清除之前的构建失败状态
+  buildFailure.value = false
+  buildFailureMessage.value = ''
+  buildCompleted.value = false
+  
+  // 关闭之前的构建状态监听连接
+  closeBuildStatusListener()
 
   let message = userInput.value.trim()
   // 如果有选中的元素，将元素信息添加到提示词中
@@ -550,11 +586,16 @@ const generateCode = async (userMessage: string, aiMessageIndex: number) => {
       isGenerating.value = false
       eventSource?.close()
 
-      // 延迟更新预览，确保后端已完成处理
-      setTimeout(async () => {
-        await fetchAppInfo()
-        updatePreview()
-      }, 1000)
+      // 如果是Vue项目，启动构建状态监听
+      if (appInfo.value?.codeGenType === CodeGenTypeEnum.VUE_PROJECT) {
+        // 创建构建状态监听连接，实时接收构建状态推送
+        createBuildStatusListener()
+      } else {
+        // 非Vue项目，正常更新预览
+        setTimeout(async () => {
+          updatePreview(true) // 强制刷新以显示最新修改
+        }, 1000)
+      }
     })
 
     // 处理business-error事件（后端限流等错误）
@@ -591,7 +632,7 @@ const generateCode = async (userMessage: string, aiMessageIndex: number) => {
 
         setTimeout(async () => {
           await fetchAppInfo()
-          updatePreview()
+          updatePreview(true) // 强制刷新以显示最新修改
         }, 1000)
       } else {
         handleError(new Error('SSE连接错误'), aiMessageIndex)
@@ -613,13 +654,275 @@ const handleError = (error: unknown, aiMessageIndex: number) => {
 }
 
 // 更新预览
-const updatePreview = () => {
+const updatePreview = (forceRefresh = false) => {
   if (appId.value) {
     const codeGenType = appInfo.value?.codeGenType || CodeGenTypeEnum.HTML
-    const newPreviewUrl = getStaticPreviewUrl(codeGenType, appId.value)
+    let newPreviewUrl = getStaticPreviewUrl(codeGenType, appId.value)
+    
+    // 如果需要强制刷新，添加时间戳参数绕过缓存
+    if (forceRefresh) {
+      const timestamp = Date.now()
+      const separator = newPreviewUrl.includes('?') ? '&' : '?'
+      newPreviewUrl = `${newPreviewUrl}${separator}_t=${timestamp}`
+    }
+    
     previewUrl.value = newPreviewUrl
     previewReady.value = true
   }
+}
+
+// 刷新预览页面（用于显示最新修改）
+const refreshPreview = () => {
+  console.log('刷新预览以显示最新修改')
+  updatePreview(true)
+}
+
+// 创建构建状态监听连接
+const createBuildStatusListener = () => {
+  if (!appId.value || buildStatusEmitter.value) return
+  
+  try {
+    const baseURL = request.defaults.baseURL || API_BASE_URL
+    const url = `${baseURL}/app/build-status/${appId.value}`
+    
+    buildStatusEmitter.value = new EventSource(url, {
+      withCredentials: true,
+    })
+    
+    // 监听构建开始事件
+    buildStatusEmitter.value.addEventListener('build-started', function () {
+      console.log('收到构建开始事件')
+      vueProjectBuilding.value = true
+      buildFailure.value = false
+      buildFailureMessage.value = ''
+      buildCompleted.value = false
+      
+      // 清除之前的超时定时器
+      if (buildTimeoutTimer.value) {
+        clearTimeout(buildTimeoutTimer.value)
+      }
+      
+      // 设置超时检测（10分钟）
+      buildTimeoutTimer.value = setTimeout(() => {
+        if (vueProjectBuilding.value && !buildCompleted.value) {
+          console.log('构建超时')
+          vueProjectBuilding.value = false
+          buildFailure.value = true
+          buildFailureMessage.value = '构建超时（超过10分钟），请检查代码是否正确'
+          buildCompleted.value = true
+          closeBuildStatusListener()
+        }
+      }, 10 * 60 * 1000) // 10分钟超时
+    })
+    
+    // 监听构建成功事件
+    buildStatusEmitter.value.addEventListener('build-success', function () {
+      console.log('收到构建成功事件，准备刷新预览')
+      vueProjectBuilding.value = false
+      buildFailure.value = false
+      buildFailureMessage.value = ''
+      buildCompleted.value = true
+      
+      // 清除超时定时器
+      if (buildTimeoutTimer.value) {
+        clearTimeout(buildTimeoutTimer.value)
+        buildTimeoutTimer.value = null
+      }
+      
+      // 显示成功通知
+      message.success('Vue项目构建完成！', 3)
+      
+      // 延迟1秒后刷新预览，确保文件已经完全写入
+      setTimeout(() => {
+        refreshPreview()
+      }, 1000)
+    })
+    
+    // 监听构建失败事件
+    buildStatusEmitter.value.addEventListener('build-failure', function (event: MessageEvent) {
+      console.log('收到构建失败事件:', event.data)
+      vueProjectBuilding.value = false
+      buildFailure.value = true
+      buildCompleted.value = true
+      
+      // 清除超时定时器
+      if (buildTimeoutTimer.value) {
+        clearTimeout(buildTimeoutTimer.value)
+        buildTimeoutTimer.value = null
+      }
+      
+      try {
+        const eventData = JSON.parse(event.data)
+        buildFailureMessage.value = eventData.message || '构建失败'
+      } catch (e) {
+        buildFailureMessage.value = '构建失败'
+      }
+      
+      console.log('设置构建失败状态:', buildFailureMessage.value)
+    })
+    
+    // 处理连接错误
+    buildStatusEmitter.value.onerror = function () {
+      console.log('构建状态SSE连接错误或关闭')
+      
+      // 只有在构建未完成时才设置错误状态
+      if (!buildCompleted.value && vueProjectBuilding.value) {
+        console.log('构建未完成，设置连接异常状态')
+        vueProjectBuilding.value = false
+        buildFailure.value = true
+        buildFailureMessage.value = '构建状态连接异常，请刷新页面重试'
+      } else {
+        console.log('构建已完成，忽略连接关闭事件')
+      }
+      
+      buildStatusEmitter.value?.close()
+      buildStatusEmitter.value = null
+    }
+    
+    console.log('构建状态监听连接已创建')
+  } catch (error) {
+    console.error('创建构建状态监听失败:', error)
+  }
+}
+
+// 关闭构建状态监听连接
+const closeBuildStatusListener = () => {
+  if (buildStatusEmitter.value) {
+    buildStatusEmitter.value.close()
+    buildStatusEmitter.value = null
+    console.log('构建状态监听连接已关闭')
+  }
+  
+  // 清除超时定时器
+  if (buildTimeoutTimer.value) {
+    clearTimeout(buildTimeoutTimer.value)
+    buildTimeoutTimer.value = null
+  }
+}
+
+// 检查Vue项目预览是否可用
+const checkVueProjectPreview = async () => {
+  if (!previewUrl.value) return
+  
+  let retryCount = 0
+  const maxRetries = 5
+  const retryInterval = 2000
+  
+  const checkPreview = async (): Promise<boolean> => {
+    try {
+      const response = await fetch(previewUrl.value, { 
+        method: 'HEAD',
+        cache: 'no-cache'
+      })
+      return response.ok
+    } catch (error) {
+      console.log('预览检查失败:', error)
+      return false
+    }
+  }
+  
+  const retryCheck = async () => {
+    retryCount++
+    console.log(`检查Vue项目预览 (${retryCount}/${maxRetries}):`, previewUrl.value)
+    
+    const isAvailable = await checkPreview()
+    if (isAvailable) {
+      console.log('Vue项目预览已就绪')
+      // 强制刷新预览以显示最新版本
+      updatePreview(true)
+      return
+    }
+    
+    if (retryCount < maxRetries) {
+      console.log(`预览未就绪，${retryInterval/1000}秒后重试...`)
+      setTimeout(retryCheck, retryInterval)
+    } else {
+      console.warn('Vue项目预览检查超时，可能构建失败或需要更长时间')
+      message.warning('预览加载较慢，请稍后手动刷新页面')
+    }
+  }
+  
+  retryCheck()
+}
+
+// 检查Vue构建状态（新方法）
+const checkVueBuildStatus = async () => {
+  let retryCount = 0
+  const maxRetries = 30 // 最多检查5分钟
+  const retryInterval = 10000 // 每10秒检查一次
+  const startTime = Date.now()
+  
+  const checkBuild = async (): Promise<{ success: boolean; hasDist: boolean; hasPackageJson: boolean }> => {
+    try {
+      // 构建预览URL，强制刷新以检测最新版本
+      updatePreview(true)
+      if (!previewUrl.value) return { success: false, hasDist: false, hasPackageJson: false }
+      
+      // 检查预览是否可访问
+      const previewResponse = await fetch(previewUrl.value, { 
+        method: 'HEAD',
+        cache: 'no-cache'
+      })
+      
+      // 如果预览可访问，说明构建成功
+      if (previewResponse.ok) {
+        return { success: true, hasDist: true, hasPackageJson: true }
+      }
+      
+      // 如果预览不可访问，检查项目目录是否存在（用于判断是否是构建失败）
+      const sourceUrl = `${API_BASE_URL}/static/vue_project_${appId.value}/package.json`
+      const sourceResponse = await fetch(sourceUrl, { 
+        method: 'HEAD',
+        cache: 'no-cache'
+      })
+      
+      return { 
+        success: false, 
+        hasDist: false, 
+        hasPackageJson: sourceResponse.ok 
+      }
+    } catch (error) {
+      return { success: false, hasDist: false, hasPackageJson: false }
+    }
+  }
+  
+  const retryCheck = async () => {
+    retryCount++
+    const elapsed = Math.round((Date.now() - startTime) / 1000)
+    console.log(`检查Vue项目构建状态 (${retryCount}/${maxRetries}) - 已等待${elapsed}秒`)
+    
+    const { success: isBuilt, hasPackageJson } = await checkBuild()
+    
+    if (isBuilt) {
+      console.log('Vue项目构建完成，预览已就绪')
+      vueProjectBuilding.value = false
+      
+      // 只显示成功通知，不需要管理构建中的通知
+      message.success('Vue项目构建完成！', 3)
+      
+      // 强制刷新预览URL以绕过缓存
+      updatePreview(true)
+      
+      return
+    }
+    
+    // 检查是否是构建失败（有源文件但长时间没有dist）
+    if (hasPackageJson && elapsed > 120) { // 2分钟后开始判断可能是构建失败
+      console.warn('检测到可能的构建失败：有源文件但构建时间过长')
+      vueProjectBuilding.value = false
+      return
+    }
+    
+    if (retryCount < maxRetries) {
+      console.log(`构建中...${retryInterval/1000}秒后再次检查`)
+      setTimeout(retryCheck, retryInterval)
+    } else {
+      console.warn('Vue项目构建检查超时')
+      vueProjectBuilding.value = false
+    }
+  }
+  
+  retryCheck()
 }
 
 // 滚动到底部
@@ -794,6 +1097,8 @@ onMounted(() => {
 
 // 清理资源
 onUnmounted(() => {
+  // 关闭构建状态监听连接
+  closeBuildStatusListener()
   // EventSource 会在组件卸载时自动清理
 })
 </script>
@@ -969,6 +1274,24 @@ onUnmounted(() => {
   font-weight: 600;
 }
 
+.preview-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.building-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #1890ff;
+  font-size: 14px;
+}
+
+.building-text {
+  color: #666;
+}
+
 .preview-actions {
   display: flex;
   gap: 8px;
@@ -1005,6 +1328,40 @@ onUnmounted(() => {
 
 .preview-loading p {
   margin-top: 16px;
+}
+
+.preview-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #ff4d4f;
+  text-align: center;
+  padding: 20px;
+}
+
+.error-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.preview-error h3 {
+  color: #ff4d4f;
+  margin-bottom: 12px;
+  font-size: 18px;
+}
+
+.error-message {
+  color: #666;
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+.error-tip {
+  color: #999;
+  font-size: 12px;
+  font-style: italic;
 }
 
 .preview-iframe {

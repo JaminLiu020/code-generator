@@ -1,7 +1,9 @@
 package com.jamin.codecube.core.builder;
 
 import cn.hutool.core.util.RuntimeUtil;
+import com.jamin.codecube.service.BuildStatusService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -14,12 +16,59 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class VueProjectBuilder {
 
+    @Autowired
+    private BuildStatusService buildStatusService;
+
     /**
      * 异步构建 Vue 项目
+     *
+     * @param projectPath 项目路径
+     * @param appId 应用ID，用于推送构建状态
+     */
+    public void buildProjectAsync(String projectPath, Long appId) {
+        Thread.ofVirtual().name("vue-builder-" + System.currentTimeMillis())
+                .start(() -> {
+                    try {
+                        // 推送构建开始事件
+                        buildStatusService.pushBuildStarted(appId);
+                        
+                        boolean success = buildProject(projectPath);
+                        
+                        if (success) {
+                            // 推送构建成功事件
+                            buildStatusService.pushBuildSuccess(appId);
+                        } else {
+                            // 推送构建失败事件
+                            buildStatusService.pushBuildFailure(appId, "构建过程中发生错误");
+                        }
+                    } catch (Exception e) {
+                        log.error("异步构建 Vue 项目时发生异常: {}", e.getMessage(), e);
+                        // 推送构建失败事件
+                        buildStatusService.pushBuildFailure(appId, e.getMessage());
+                    }
+                });
+    }
+
+    /**
+     * 异步构建 Vue 项目（兼容旧接口）
      *
      * @param projectPath
      */
     public void buildProjectAsync(String projectPath) {
+        // 从项目路径中提取appId（这是一个临时方案）
+        String[] pathParts = projectPath.split("/");
+        String lastPart = pathParts[pathParts.length - 1];
+        if (lastPart.startsWith("vue_project_")) {
+            try {
+                Long appId = Long.parseLong(lastPart.replace("vue_project_", ""));
+                buildProjectAsync(projectPath, appId);
+                return;
+            } catch (NumberFormatException e) {
+                log.warn("无法从路径中解析appId: {}", projectPath);
+            }
+        }
+        
+        // 如果无法解析appId，使用原来的逻辑
         Thread.ofVirtual().name("vue-builder-" + System.currentTimeMillis())
                 .start(() -> {
                     try {

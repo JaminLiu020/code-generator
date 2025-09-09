@@ -141,10 +141,13 @@ public class AiCodeGeneratorFacade {
                         sink.next(JSONUtil.toJsonStr(toolExecutedMessage));
                     })
                     .onCompleteResponse((ChatResponse response) -> {
-                        // 异步构造 Vue 项目
-                        String projectDir = AppConstant.CODE_OUTPUT_ROOT_DIR + "/vue_project_" + appId;
-                        vueProjectBuilder.buildProject(projectDir);
+                        // 立即完成代码生成流
                         sink.complete();
+                        
+                        // 异步构建 Vue 项目，不阻塞响应，并传递appId用于状态推送
+                        String projectDir = AppConstant.CODE_OUTPUT_ROOT_DIR + "/vue_project_" + appId;
+                        vueProjectBuilder.buildProjectAsync(projectDir, appId);
+                        log.info("Vue 项目异步构建已启动: {}", projectDir);
                     })
                     .onError((Throwable error) -> {
                         error.printStackTrace();
