@@ -58,6 +58,6 @@ public interface AiCodeGeneratorService {
      * @param userMessage
      * @return
      */
-    @SystemMessage(fromResource = "prompt/codegen-vue-project-system-prompt.txt")
+    @SystemMessage(fromResource = "prompt/codegen-vue-project-system-prompt-refactor.txt")
     TokenStream generateVueProjectCodeStream(@MemoryId Long appId, @UserMessage String userMessage);
 }
