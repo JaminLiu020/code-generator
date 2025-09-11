@@ -1,6 +1,5 @@
 package com.jamin.codecube.ai.tools;
 
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
 import com.jamin.codecube.constant.AppConstant;
@@ -13,6 +12,7 @@ import org.springframework.stereotype.Component;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -58,8 +58,8 @@ public class FileDirReadTool extends BaseTool{
             }
             StringBuilder structure = new StringBuilder();
             structure.append("项目目录结构:\n");
-            // 使用 Hutool 递归获取所有文件
-            List<File> allFiles = FileUtil.loopFiles(targetDir, file -> !shouldIgnore(file.getName()));
+            // 使用自定义递归获取过滤后的文件
+            List<File> allFiles = getFilteredFiles(targetDir);
             // 按路径深度和名称排序显示
             allFiles.stream()
                     .sorted((f1, f2) -> {
@@ -74,6 +74,10 @@ public class FileDirReadTool extends BaseTool{
                         int depth = getRelativeDepth(targetDir, file);
                         String indent = "  ".repeat(depth);
                         structure.append(indent).append(file.getName());
+                        if (file.isDirectory()) {
+                            structure.append("/");
+                        }
+                        structure.append("\n");
                     });
             return structure.toString();
 
@@ -82,6 +86,41 @@ public class FileDirReadTool extends BaseTool{
             log.error(errorMessage, e);
             return errorMessage;
         }
+    }
+
+    /**
+     * 使用自定义递归获取过滤后的文件和目录
+     * 这种方法在目录级别就进行过滤，避免进入被忽略的目录，性能更好
+     */
+    private List<File> getFilteredFiles(File directory) {
+        List<File> result = new ArrayList<>();
+        
+        // 如果当前目录应该被忽略，直接返回空列表（不递归进入）
+        if (shouldIgnore(directory.getName())) {
+            return result;
+        }
+        
+        // 将当前目录也加入结果（如果不是根目录）
+        File[] files = directory.listFiles();
+        if (files != null) {
+            for (File file : files) {
+                if (file.isDirectory()) {
+                    // 如果是目录且不应该被忽略，添加目录本身，然后递归处理
+                    if (!shouldIgnore(file.getName())) {
+                        result.add(file);
+                        result.addAll(getFilteredFiles(file));
+                    }
+                    // 如果目录应该被忽略，直接跳过，不进入递归
+                } else {
+                    // 如果是文件且不应该被忽略，添加到结果中
+                    if (!shouldIgnore(file.getName())) {
+                        result.add(file);
+                    }
+                }
+            }
+        }
+        
+        return result;
     }
 
     /**
