@@ -71,6 +71,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>  implements U
                 .userPassword(encryptPassword)
                 .userName("用户" + userAccount) // 默认用户名
                 .userRole(UserRoleEnum.USER.getValue()) // 默认普通用户
+                .userAvatar(UserConstant.DEFAULT_AVATAR) // 默认头像
                 .shareCode(userAccount)
                 .build();
 

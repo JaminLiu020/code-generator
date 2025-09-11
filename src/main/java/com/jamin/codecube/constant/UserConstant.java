@@ -21,5 +21,7 @@ public final class UserConstant {
      */
     public static final String ADMIN_ROLE = "admin";
 
+    public static final String DEFAULT_AVATAR = "https://code-cube-1305400127.cos.ap-guangzhou.myqcloud.com/defaultAvatar.png";
+
     // endregion
 }

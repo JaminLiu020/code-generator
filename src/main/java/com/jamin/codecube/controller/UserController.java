@@ -58,8 +58,12 @@ public class UserController {
         final String DEFAULT_PASSWORD = "12345678";
         String encryptPassword = userService.getEncryptPassword(DEFAULT_PASSWORD);
         user.setUserPassword(encryptPassword);
+        //4.如果未指定头像，设定默认头像
+        if(user.getUserAvatar() == null || user.getUserAvatar().isBlank()){
+            user.setUserAvatar(UserConstant.DEFAULT_AVATAR);
+        }
 
-        //4.保存用户
+        //5.保存用户
         boolean result = userService.save(user);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "用户添加失败");
 
