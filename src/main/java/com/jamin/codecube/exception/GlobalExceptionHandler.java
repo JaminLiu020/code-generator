@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
+import org.springframework.web.context.request.async.AsyncRequestTimeoutException;
 
 import java.io.IOException;
 import java.util.Map;
@@ -31,8 +32,22 @@ public class GlobalExceptionHandler {
         return ResultUtils.error(e.getCode(), e.getMessage());
     }
 
+    @ExceptionHandler(AsyncRequestTimeoutException.class)
+    public BaseResponse<?> asyncRequestTimeoutExceptionHandler(AsyncRequestTimeoutException e) {
+        log.info("异步请求超时，这通常是SSE连接的正常超时: {}", e.getMessage());
+        // SSE连接超时是正常现象，不需要特殊处理
+        // 直接返回null，让Spring处理
+        return null;
+    }
+
     @ExceptionHandler(RuntimeException.class)
     public BaseResponse<?> runtimeExceptionHandler(RuntimeException e) {
+        // 如果是AsyncRequestTimeoutException，不记录为错误
+        if (e instanceof AsyncRequestTimeoutException) {
+            log.info("异步请求超时: {}", e.getMessage());
+            return null;
+        }
+        
         log.error("RuntimeException", e);
         // 尝试处理 SSE 请求
         if (handleSseError(ErrorCode.SYSTEM_ERROR.getCode(), "系统错误")) {
@@ -55,6 +70,11 @@ public class GlobalExceptionHandler {
         }
         HttpServletRequest request = attributes.getRequest();
         HttpServletResponse response = attributes.getResponse();
+        
+        if (response == null) {
+            return false;
+        }
+        
         // 判断是否是SSE请求（通过Accept头或URL路径）
         String accept = request.getHeader("Accept");
         String uri = request.getRequestURI();

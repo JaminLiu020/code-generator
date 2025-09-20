@@ -40,6 +40,12 @@ public class BuildStatusServiceImpl implements BuildStatusService {
         emitter.onTimeout(() -> {
             log.info("构建状态SSE连接超时，appId: {}", appId);
             emitters.remove(appId);
+            // 超时时直接完成连接，不抛异常
+            try {
+                emitter.complete();
+            } catch (Exception e) {
+                log.debug("完成超时SSE连接时发生异常: {}", e.getMessage());
+            }
         });
         
         // 设置连接错误时清理
