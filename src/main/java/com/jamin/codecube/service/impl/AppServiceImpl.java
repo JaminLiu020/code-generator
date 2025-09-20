@@ -23,10 +23,7 @@ import com.jamin.codecube.model.enums.ChatHistoryMessageTypeEnum;
 import com.jamin.codecube.model.enums.CodeGenTypeEnum;
 import com.jamin.codecube.model.vo.AppVO;
 import com.jamin.codecube.model.vo.UserVO;
-import com.jamin.codecube.service.AppService;
-import com.jamin.codecube.service.ChatHistoryService;
-import com.jamin.codecube.service.ScreenshotService;
-import com.jamin.codecube.service.UserService;
+import com.jamin.codecube.service.*;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import com.jamin.codecube.exception.BusinessException;
@@ -59,6 +56,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
     private AiCodeGeneratorFacade aiCodeGeneratorFacade;
     @Autowired
     private ChatHistoryService chatHistoryService;
+    @Autowired
+    private ChatHistoryOriginalService chatHistoryOriginalService;
     @Autowired
     private StreamHandlerExecutor streamHandlerExecutor;
     @Autowired
@@ -175,6 +174,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         ThrowUtils.throwIf(codeGenTypeEnum == null, ErrorCode.PARAMS_ERROR, "不支持的代码生成类型");
         // 在调用AI前，将用户消息存进对话记录表
         chatHistoryService.addChatMessage(appId, message, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
+        chatHistoryOriginalService.addOriginalChatMessage(appId, message, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
         // 6. 根据 agent 参数选择生成方式
         Flux<String> codeStream;
         if (agent) {
@@ -185,7 +185,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
             codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
         }
         // 收集AI响应的内容，并且在完成后保存记录到对话历史
-        return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser, codeGenTypeEnum);
+        return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, chatHistoryOriginalService, appId, loginUser, codeGenTypeEnum);
     }
 
     /**
@@ -334,6 +334,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         // 先删除关联的对话历史
         try {
             chatHistoryService.deleteByAppId(appId);
+            chatHistoryOriginalService.deleteByAppId(appId);
         } catch (Exception e) {
             // 记录日志但不阻止应用删除
             log.error("删除应用关联对话历史失败: {}", e.getMessage());
