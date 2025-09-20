@@ -7,6 +7,7 @@ import com.jamin.codecube.ai.tools.*;
 import com.jamin.codecube.exception.BusinessException;
 import com.jamin.codecube.exception.ErrorCode;
 import com.jamin.codecube.model.enums.CodeGenTypeEnum;
+import com.jamin.codecube.service.ChatHistoryOriginalService;
 import com.jamin.codecube.service.ChatHistoryService;
 import com.jamin.codecube.utils.SpringContextUtil;
 import dev.langchain4j.community.store.memory.chat.redis.RedisChatMemoryStore;
@@ -38,6 +39,8 @@ public class AiCodeGeneratorServiceFactory {
     private RedisChatMemoryStore redisChatMemoryStore;
     @Autowired
     private ChatHistoryService chatHistoryService;
+    @Autowired
+    private ChatHistoryOriginalService chatHistoryOriginalService;
     @Autowired
     private ToolManager toolManager;
     @Value("${langchain4j.openai.max-messages}")
@@ -102,11 +105,13 @@ public class AiCodeGeneratorServiceFactory {
                 .chatMemoryStore(redisChatMemoryStore)
                 .maxMessages(maxMessages)
                 .build();
-        // 从数据库中加载对话记录
-        chatHistoryService.loadChatHistoryToMemory(appId, chatMemory, 20);
+
         switch (codeGenType) {
             // 对于 HTML 和多文件代码生成，使用通用的 AiCodeGeneratorService
             case HTML, MULTI_FILE:{
+                // 从数据库中加载对话记录
+                chatHistoryService.loadChatHistoryToMemory(appId, chatMemory, 20);
+
                 // 使用多例模式的StreamChatModel，确保每次调用都是新的实例，解决并发问题
                 StreamingChatModel openAiStreamingChatModel = SpringContextUtil.getBean("streamingChatModelPrototype", StreamingChatModel.class);
                 return AiServices.builder(AiCodeGeneratorService.class)
@@ -118,6 +123,9 @@ public class AiCodeGeneratorServiceFactory {
             }
             // 对于 Vue 项目代码生成，使用推理模型和工具调用
             case VUE_PROJECT:{
+                // 从数据库加载历史对话到缓存中，由于多了工具调用相关信息，加载的最大数量稍微多一些
+                chatHistoryOriginalService.loadOriginalChatHistoryToMemory(appId, chatMemory, 50);
+
                 // 使用多例模式的 StreamingChatModel 解决并发问题
                 StreamingChatModel reasoningStreamingChatModel = SpringContextUtil.getBean("reasoningStreamingChatModelPrototype", StreamingChatModel.class);
                 return AiServices.builder(AiCodeGeneratorService.class)
