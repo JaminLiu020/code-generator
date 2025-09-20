@@ -2,14 +2,14 @@
   <a-layout-footer class="footer">
     <div class="footer-content">
       <p class="copyright">
-<!--        <a-->
-<!--          href="https://www.codefather.cn"-->
-<!--          target="_blank"-->
-<!--          rel="noopener noreferrer"-->
-<!--          class="author-link"-->
-<!--        >-->
-<!--          编程导航原创项目 by 程序员鱼皮-->
-<!--        </a>-->
+        <a
+          href="https://beian.miit.gov.cn"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="author-link"
+        >
+          备案号：粤ICP备2025473021号
+        </a>
       </p>
     </div>
   </a-layout-footer>

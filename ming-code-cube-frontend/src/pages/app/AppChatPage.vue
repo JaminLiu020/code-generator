@@ -430,11 +430,6 @@ const fetchAppInfo = async () => {
         updatePreview()
       }
       
-      // 如果是Vue项目，创建构建状态监听连接
-      if (appInfo.value.codeGenType === CodeGenTypeEnum.VUE_PROJECT) {
-        createBuildStatusListener()
-      }
-      
       // 检查是否需要自动发送初始提示词
       // 只有在是自己的应用且没有对话历史时才自动发送
       if (
