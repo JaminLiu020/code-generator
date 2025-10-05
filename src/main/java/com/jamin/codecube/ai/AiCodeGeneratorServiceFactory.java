@@ -124,7 +124,7 @@ public class AiCodeGeneratorServiceFactory {
             // 对于 Vue 项目代码生成，使用推理模型和工具调用
             case VUE_PROJECT:{
                 // 从数据库加载历史对话到缓存中，由于多了工具调用相关信息，加载的最大数量稍微多一些
-                chatHistoryOriginalService.loadOriginalChatHistoryToMemory(appId, chatMemory, 50);
+                chatHistoryOriginalService.loadOriginalChatHistoryToMemory(appId, chatMemory, 60);
 
                 // 使用多例模式的 StreamingChatModel 解决并发问题
                 StreamingChatModel reasoningStreamingChatModel = SpringContextUtil.getBean("reasoningStreamingChatModelPrototype", StreamingChatModel.class);
@@ -137,6 +137,7 @@ public class AiCodeGeneratorServiceFactory {
                                     "there is no tool called " + toolExecutionRequest.name()))
                         .inputGuardrails(new PromptSafetyInputGuardrail())
                         .maxSequentialToolsInvocations(30)
+
                         .build();
             }
             default:

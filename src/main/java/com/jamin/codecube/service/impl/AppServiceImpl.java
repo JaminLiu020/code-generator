@@ -23,6 +23,8 @@ import com.jamin.codecube.model.enums.ChatHistoryMessageTypeEnum;
 import com.jamin.codecube.model.enums.CodeGenTypeEnum;
 import com.jamin.codecube.model.vo.AppVO;
 import com.jamin.codecube.model.vo.UserVO;
+import com.jamin.codecube.monitor.MonitorContext;
+import com.jamin.codecube.monitor.MonitorContextHolder;
 import com.jamin.codecube.service.*;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
@@ -161,20 +163,27 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
      */
     @Override
     public Flux<String> chatToGenCode(Long appId, String message, User loginUser, boolean agent) {
-        // 参数校验
+        // 1.参数校验
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID无效");
         ThrowUtils.throwIf(StrUtil.isBlank(message), ErrorCode.PARAMS_ERROR, "消息不能为空");
-        // 获取应用信息
+        // 2.获取应用信息
         App app = this.getById(appId);
         ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
-        // 校验用户权限
+        // 3.校验用户权限
         ThrowUtils.throwIf(!app.getUserId().equals(loginUser.getId()),
                 ErrorCode.FORBIDDEN_ERROR, "没有权限操作该应用");
         CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(app.getCodeGenType());
         ThrowUtils.throwIf(codeGenTypeEnum == null, ErrorCode.PARAMS_ERROR, "不支持的代码生成类型");
-        // 在调用AI前，将用户消息存进对话记录表
+        // 4.在调用AI前，将用户消息存进对话记录表
         chatHistoryService.addChatMessage(appId, message, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
         chatHistoryOriginalService.addOriginalChatMessage(appId, message, ChatHistoryMessageTypeEnum.USER.getValue(), loginUser.getId());
+        // 5.设置监控上下文
+        MonitorContextHolder.setContext(
+                MonitorContext.builder()
+                        .appId(String.valueOf(appId))
+                        .userId(String.valueOf(loginUser.getId()))
+                .build()
+        );
         // 6. 根据 agent 参数选择生成方式
         Flux<String> codeStream;
         if (agent) {
@@ -184,8 +193,12 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
             // 传统模式：调用 AI 生成代码（流式）
             codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
         }
-        // 收集AI响应的内容，并且在完成后保存记录到对话历史
-        return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, chatHistoryOriginalService, appId, loginUser, codeGenTypeEnum);
+        // 7.收集AI响应的内容，并且在完成后保存记录到对话历史
+        return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, chatHistoryOriginalService, appId, loginUser, codeGenTypeEnum)
+                .doFinally(signalType -> {
+                    // 流结束时清理监控上下文，无论成功还是失败
+                    MonitorContextHolder.clearContext();
+                });
     }
 
     /**

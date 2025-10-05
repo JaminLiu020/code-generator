@@ -1,14 +1,17 @@
 package com.jamin.codecube.config;
 
+import com.jamin.codecube.monitor.AiModelMonitorListener;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import lombok.Data;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
 
 import java.time.Duration;
+import java.util.List;
 
 @Configuration
 @ConfigurationProperties(prefix = "langchain4j.open-ai.streaming-chat-model")
@@ -29,6 +32,9 @@ public class StreamingChatModelConfig {
 
     private boolean logResponses;
 
+    @Autowired
+    private AiModelMonitorListener aiModelMonitorListener;
+
     /**
      * 流式聊天模型配置 - 每次注入都会创建一个新的实例
      * @return
@@ -45,6 +51,7 @@ public class StreamingChatModelConfig {
                 .logRequests(logRequests)
                 .logResponses(logResponses)
                 .timeout(Duration.ofMinutes(5))
+                .listeners(List.of(aiModelMonitorListener))
                 .build();
     }
 }
